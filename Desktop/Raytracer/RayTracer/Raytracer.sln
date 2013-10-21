@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Raytracer", "Raytracer.vcxproj", "{652A32D6-21E0-479B-A7AA-FDBD455214F8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{652A32D6-21E0-479B-A7AA-FDBD455214F8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{652A32D6-21E0-479B-A7AA-FDBD455214F8}.Debug|Win32.Build.0 = Debug|Win32
+		{652A32D6-21E0-479B-A7AA-FDBD455214F8}.Release|Win32.ActiveCfg = Release|Win32
+		{652A32D6-21E0-479B-A7AA-FDBD455214F8}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
