@@ -1,0 +1,23 @@
+#pragma once
+
+#include <iostream>
+#include <fstream>
+#include <cmath>
+#include <queue>
+#include <map>
+#include <sstream>
+#include <assert.h> 
+#include <float.h>
+#include <cstdint>
+#include <tuple>
+#include "common.h"
+#include "bitmap.h"
+#include "color.h"
+#include "mathVector.h"
+#include "matrix.h"
+#include "meshIO.h"
+#include "rasterLib.h"
+#include "geom.h"
+#include "model.h"
+#include "resourceManager.h"
+#include "camera.h"
