@@ -144,6 +144,7 @@
     <ClCompile Include="geom.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="matrix.cpp" />
+    <ClCompile Include="rasterizer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bitmap.h" />
@@ -152,9 +153,10 @@
     <ClInclude Include="common.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="geom.h" />
+    <ClInclude Include="globals.h" />
+    <ClInclude Include="image.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="meshIO.h" />
-    <ClInclude Include="model.h" />
     <ClInclude Include="mathVector.h" />
     <ClInclude Include="rasterLib.h" />
     <ClInclude Include="resourceManager.h" />

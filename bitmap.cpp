@@ -280,7 +280,7 @@ bool Bitmap::SetPixel( const int32_t x, const int32_t y, const uint32_t color )
 
 uint32_t Bitmap::GetPixel( const int32_t x, const int32_t y )
 {
-	if ( ( x > static_cast<int32_t>( h.width ) ) || ( x < 0 ) || ( y > static_cast<int32_t>( h.height ) ) || ( y < 0 ) )
+	if ( ( x >= static_cast<int32_t>( h.width ) ) || ( x < 0 ) || ( y >= static_cast<int32_t>( h.height ) ) || ( y < 0 ) )
 	{
 		return 0;
 	}

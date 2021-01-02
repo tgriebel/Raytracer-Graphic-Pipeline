@@ -18,6 +18,5 @@
 #include "meshIO.h"
 #include "rasterLib.h"
 #include "geom.h"
-#include "model.h"
 #include "resourceManager.h"
 #include "camera.h"

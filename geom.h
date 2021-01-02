@@ -4,6 +4,7 @@
 #include "mathVector.h"
 #include "matrix.h"
 #include "color.h"
+#include "meshIO.h"
 
 struct Ray
 {
@@ -68,9 +69,20 @@ struct vertex_t
 {
 	vec4d	pos;
 	vec3d	normal;
+	vec3d	tangent;
+	vec3d	bitangent;
 	vec2d	uv;
 	Color	color;
 };
+
+
+inline bool operator==( const vertex_t& vertex0, const vertex_t& vertex1 )
+{
+	return (	( vertex0.pos == vertex1.pos )
+			&& 	( vertex0.normal == vertex1.normal )
+			&&	( vertex0.uv == vertex1.uv )
+			&&	( vertex0.color == vertex1.color ) );
+}
 
 
 struct AABB
@@ -213,7 +225,7 @@ struct Triangle
 		e1 = ( pt2 - pt1 );
 		e2 = ( pt2 - pt0 );
 
-		n = Cross( e0, e2 ).Normalize();
+		n = Cross( e0, e1 ).Normalize();
 
 		t = e0.Normalize();
 		b = Cross( n, t );
@@ -225,7 +237,44 @@ struct Triangle
 };
 
 
-vec3d PointToBarycentric( const vec3d& pt, const vec3d& v0, const vec3d& v1, const vec3d& v2 )
+class Model
+{
+public:
+	std::string		name;
+	uint32_t		vb;
+	uint32_t		ib;
+	uint32_t		vbOffset;
+	uint32_t		ibOffset;
+	uint32_t		vbEnd;
+	uint32_t		ibEnd;
+	material_t		material;
+};
+
+
+class ModelInstance
+{
+public:
+	std::vector<Triangle>	triList;
+	AABB					aabb;
+	uint32_t				vb;
+	uint32_t				modelIx;
+	mat4x4d					transform;
+	vec3d					centroid;
+	material_t				material;
+
+	void ComputeAABB()
+	{
+		const size_t triCnt = triList.size();
+		for ( size_t i = 0; i < triCnt; ++i )
+		{
+			aabb.Expand( triList[ i ].aabb.min );
+			aabb.Expand( triList[ i ].aabb.max );
+		}
+	}
+};
+
+
+inline vec3d PointToBarycentric( const vec3d& pt, const vec3d& v0, const vec3d& v1, const vec3d& v2 )
 {
 	vec3d e1 = v2 - v1;
 	vec3d e2 = v0 - v2;
@@ -249,7 +298,7 @@ vec3d PointToBarycentric( const vec3d& pt, const vec3d& v0, const vec3d& v1, con
 
 
 // Möller–Trumbore ray-triangle intersection algorithm
-bool RayToTriangleIntersection( Ray& r, const Triangle& tri, bool& outBackface, double& outT )
+inline bool RayToTriangleIntersection( Ray& r, const Triangle& tri, bool& outBackface, double& outT )
 {
 	const double	epsilon	= 1e-7;
 	const vec3d		e0		= tri.e0;
@@ -290,3 +339,9 @@ bool RayToTriangleIntersection( Ray& r, const Triangle& tri, bool& outBackface, 
 		return false;
 	}
 }
+
+
+uint32_t LoadModel( std::string path, const uint32_t vb, const uint32_t ib );
+uint32_t LoadModelObj( std::string path, const uint32_t vb, const uint32_t ib );
+void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance );
+uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& size, const vec2i& cellCnt, const material_t& material );

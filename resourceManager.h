@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <vector>
 #include "geom.h"
-#include "model.h"
 
 class ResourceManager
 {
@@ -31,7 +30,7 @@ public:
 		return static_cast<uint32_t>( modelBuffer.size() - 1 );
 	}
 
-	void AddVertex( const uint32_t vbIx, const vertex_t vertex )
+	void AddVertex( const uint32_t vbIx, const vertex_t& vertex )
 	{
 		vertexBuffers[ vbIx ].buffer.push_back( vertex );
 	}

@@ -6,37 +6,75 @@
 #include <vector>
 #include <sstream>
 #include <limits>
+#include <map>
 
-namespace GeomReader
+namespace MeshIO
 {
 	class Polytope;
 	class Tetgen;
 	class Off;
 	class Obj;
 
-	void RemoveUnnecessaryCharacters( std::fstream& stream, std::stringstream& newStream );
+	static inline void CleanLine( std::fstream& stream, std::stringstream& newStream );
 
-	void ReadTetGen( const std::string& baseFileName, Tetgen& mesh );
-	void WriteTetGen( const std::string& baseFileName, const Tetgen& mesh );
+	static inline void ReadTetGen( const std::string& baseFileName, Tetgen& mesh );
+	static inline void WriteTetGen( const std::string& baseFileName, const Tetgen& mesh );
 
-	void ReadOFF( const std::string& fileName, Off& mesh );
-	void WriteOFF( const std::string& fileName, const Off& mesh );
+	static inline void ReadOFF( const std::string& fileName, Off& mesh );
+	static inline void WriteOFF( const std::string& fileName, const Off& mesh );
 
-	// void ReadObj( string fileName, Obj& mesh );
+	static inline void ReadObj( const std::string& fileName, Obj& mesh );
 	// void WriteObj( string fileName, const Obj& mesh );
+
+	struct vector_t
+	{
+		vector_t() : x( 0.0 ), y( 0.0 ), z( 0.0 ), w( 0.0 ) {}
+
+		double	x;
+		double	y;
+		double	z;
+		double	w;
+	};
 
 	struct node_t
 	{
-		node_t() : x( 0 ), y( 0 ), z( 0 ), r( 0 ), g( 0 ), b( 0 ), a( 0 ) {}
+		node_t() : r( 0 ), g( 0 ), b( 0 ), a( 0 ) {}
 
-		double	x, y, z;
-		double	r, g, b, a;
+		vector_t pos;
+		double	r;
+		double	g;
+		double	b;
+		double	a;
 		bool	colored;
 	};
 
-	struct edge_t {
+	struct objIndex_t
+	{
+		int32_t vertexIx;
+		int32_t uvIx;
+		int32_t normalIx;		
+	};
 
-		int32_t n1, n2;
+	struct objFace_t
+	{
+		std::vector<objIndex_t> vertices;
+	};
+
+	struct objSmoothingGroup_t
+	{
+		std::vector<objFace_t> faces;
+	};
+
+	struct objGroup_t
+	{
+		std::string material;
+		std::map<int32_t, objSmoothingGroup_t> smoothingGroups;
+	};
+
+	struct edge_t
+	{
+		int32_t	n1;
+		int32_t	n2;
 		edge_t() : n1( 0 ), n2( 0 ) {}
 	};
 
@@ -88,43 +126,46 @@ namespace GeomReader
 	class Off
 	{
 	public:
-		int32_t nvertices, nedges, nfaces;
-		node_t* vertices;
-		Polytope* faces;
-		bool vertices_colored, faces_colored;
+		int32_t		verticesCnt;
+		int32_t		edgesCnt;
+		int32_t		facesCnt;
+		node_t*		vertices;
+		Polytope*	faces;
+		bool		vertices_colored;
+		bool		faces_colored;
 
-		Off() :nvertices( 0 ), nedges( 0 ), nfaces( 0 ), vertices( NULL ), faces( NULL ), vertices_colored( false ), faces_colored( false ) {}
+		Off() :verticesCnt( 0 ), edgesCnt( 0 ), facesCnt( 0 ), vertices( NULL ), faces( NULL ), vertices_colored( false ), faces_colored( false ) {}
 
-		Off( int32_t _vertices, int32_t _edges, int32_t _faces ) : nvertices( _vertices ), nedges( _edges ), nfaces( _faces ), vertices_colored( false ), faces_colored( false )
+		Off( int32_t _vertices, int32_t _edges, int32_t _faces ) : verticesCnt( _vertices ), edgesCnt( _edges ), facesCnt( _faces ), vertices_colored( false ), faces_colored( false )
 		{
-			vertices = new node_t[ nvertices ];
-			faces = new Polytope[ nfaces ];
+			vertices = new node_t[ verticesCnt ];
+			faces = new Polytope[ facesCnt ];
 		}
 
 		Off( const Off& source ) :
-			nvertices( source.nvertices ),
-			nedges( source.nedges ),
-			nfaces( source.nfaces ),
+			verticesCnt( source.verticesCnt ),
+			edgesCnt( source.edgesCnt ),
+			facesCnt( source.facesCnt ),
 			vertices_colored( source.vertices_colored ),
 			faces_colored( source.faces_colored )
 		{
-			vertices = new node_t[ nvertices ];
-			faces = new Polytope[ nfaces ];
+			vertices = new node_t[ verticesCnt ];
+			faces = new Polytope[ facesCnt ];
 
-			for ( int32_t i( 0 ); i < nvertices; ++i )	vertices[ i ] = source.vertices[ i ];
-			for ( int32_t i( 0 ); i < nfaces; ++i )		faces[ i ] = source.faces[ i ];
+			for ( int32_t i( 0 ); i < verticesCnt; ++i )	vertices[ i ] = source.vertices[ i ];
+			for ( int32_t i( 0 ); i < facesCnt; ++i )		faces[ i ] = source.faces[ i ];
 		}
 
 		void Init( int32_t _vertices, int32_t _edges, int32_t _faces )
 		{
-			nvertices = _vertices;
-			nedges = _edges;
-			nfaces = _faces;
+			verticesCnt = _vertices;
+			edgesCnt = _edges;
+			facesCnt = _faces;
 			vertices_colored = false;
 			faces_colored = false;
 
-			vertices = new node_t[ nvertices ];
-			faces = new Polytope[ nfaces ];
+			vertices = new node_t[ verticesCnt ];
+			faces = new Polytope[ facesCnt ];
 		}
 
 		~Off()
@@ -133,6 +174,17 @@ namespace GeomReader
 			delete[] faces;
 		}
 	};
+
+	class Obj
+	{
+	public:
+		std::vector<std::string>			materialLibs;
+		std::vector<vector_t>				vertices;
+		std::vector<vector_t>				normals;
+		std::vector<vector_t>				uvs;
+		std::map<std::string, objGroup_t>	groups;
+	};
+
 
 	class Tetgen
 	{
@@ -221,29 +273,22 @@ namespace GeomReader
 	};
 
 
-	static void RemoveUnnecessaryCharacters( std::fstream& stream, std::stringstream& new_stream )
+	static void CleanLine( std::string& str, std::string& outStr )
 	{
-		std::vector<std::string> lines;
-		std::string tmp_line;
+		const size_t offset = str.find( "#" );
 
-		while ( !stream.eof() ) {
-			getline( stream, tmp_line );
-
-			//TODO: find '#' and remove what follows, instead of checking first char
-			if ( tmp_line.size() > 0 && tmp_line[ 0 ] != '#' && tmp_line != "\n" ) {
-				lines.push_back( tmp_line + "\n" );
-			}
+		if( offset != std::string::npos )
+		{
+			outStr = str.substr( 0, offset );
+			return;
 		}
 
-		std::string buf;
-		for ( std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); ++it ) {
+		outStr = str;
 
-			buf += *it;
-		}
-
-		new_stream.str( buf );
+		std::for_each( outStr.begin(), outStr.end(), []( char& c ) {
+			c = ::tolower( c );
+		} );
 	}
-
 
 	void ReadTetGen( const std::string& baseFileName, Tetgen& mesh )
 	{
@@ -268,9 +313,9 @@ namespace GeomReader
 		for ( int32_t i = 0; i < points; ++i )
 		{
 			nodeStream >> trash;
-			nodeStream >> mesh.vertices[ i ].x;
-			nodeStream >> mesh.vertices[ i ].y;
-			nodeStream >> mesh.vertices[ i ].z;
+			nodeStream >> mesh.vertices[ i ].pos.x;
+			nodeStream >> mesh.vertices[ i ].pos.y;
+			nodeStream >> mesh.vertices[ i ].pos.z;
 			nodeStream.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
 		}
 		nodeStream.close();
@@ -346,7 +391,7 @@ namespace GeomReader
 		// Write vertices
 		for ( int32_t i = 0; i < mesh.numVertices; ++i )
 		{
-			nodeFileStream << ( i + 1 ) << " " << mesh.vertices[ i ].x << " " << mesh.vertices[ i ].y << " " << mesh.vertices[ i ].z << " \n";
+			nodeFileStream << ( i + 1 ) << " " << mesh.vertices[ i ].pos.x << " " << mesh.vertices[ i ].pos.y << " " << mesh.vertices[ i ].pos.z << " \n";
 		}
 		nodeFileStream << "#finished" << std::endl;
 		nodeFileStream.close();
@@ -412,15 +457,15 @@ namespace GeomReader
 		mesh.Init( vertices, edges, faces );
 
 		// Read vertices
-		for ( int32_t i = 0; i < mesh.nvertices; ++i )
+		for ( int32_t i = 0; i < mesh.verticesCnt; ++i )
 		{
 			getline( inputStream, line );
 			ss.clear();
 			ss.str( line );
 
-			ss >> mesh.vertices[ i ].x;
-			ss >> mesh.vertices[ i ].y;
-			ss >> mesh.vertices[ i ].z;
+			ss >> mesh.vertices[ i ].pos.x;
+			ss >> mesh.vertices[ i ].pos.y;
+			ss >> mesh.vertices[ i ].pos.z;
 
 			ss >> mesh.vertices[ i ].r;
 			ss >> mesh.vertices[ i ].g;
@@ -431,7 +476,7 @@ namespace GeomReader
 		}
 
 		// Read polygons
-		for ( int32_t i = 0; i < mesh.nfaces; ++i )
+		for ( int32_t i = 0; i < mesh.facesCnt; ++i )
 		{
 			getline( inputStream, line );
 			ss.clear();
@@ -479,12 +524,12 @@ namespace GeomReader
 	{
 		std::fstream output = std::fstream( file_name.c_str(), std::fstream::out );
 		output << "OFF" << "\n";
-		output << mesh.nvertices << " " << mesh.nfaces << " " << mesh.nedges << "\n";
+		output << mesh.verticesCnt << " " << mesh.facesCnt << " " << mesh.edgesCnt << "\n";
 
 		// Write vertices
-		for ( int32_t i = 0; i < mesh.nvertices; ++i )
+		for ( int32_t i = 0; i < mesh.verticesCnt; ++i )
 		{
-			output << mesh.vertices[ i ].x << " " << mesh.vertices[ i ].y << " " << mesh.vertices[ i ].z;
+			output << mesh.vertices[ i ].pos.x << " " << mesh.vertices[ i ].pos.y << " " << mesh.vertices[ i ].pos.z;
 
 			if ( mesh.vertices[ i ].colored )
 			{
@@ -497,7 +542,7 @@ namespace GeomReader
 		}
 
 		// Write faces
-		for ( int32_t i = 0; i < mesh.nfaces; ++i )
+		for ( int32_t i = 0; i < mesh.facesCnt; ++i )
 		{
 			output << mesh.faces[ i ].npoints << " ";
 
@@ -510,6 +555,168 @@ namespace GeomReader
 		}
 
 		output.close();
+	}
+
+	void ReadObj( const std::string& file_name, Obj& mesh )
+	{
+		std::fstream inputStream = std::fstream( file_name.c_str(), std::fstream::in );
+
+		struct state_t
+		{
+			std::string	object;
+			std::string	group;
+			std::string	material;
+			int32_t		smoothGroup;
+		};
+
+		state_t state;
+		state.object = "";
+		state.group = "";
+		state.material = "";
+		state.smoothGroup = 0;
+
+		while( !inputStream.eof() )
+		{
+			std::string line = "";
+			std::string srcLine = "";
+
+			getline( inputStream, srcLine );
+
+			CleanLine( srcLine, line );
+
+			if( line.length() == 0 )
+				continue;
+
+			std::stringstream ss;
+			ss.clear();
+			ss.str( line );
+
+			std::string semanticToken;
+			ss >> semanticToken;
+
+			if( semanticToken.compare( "mtllib") == 0 )
+			{
+				std::string mtlFileName;
+				ss >> mtlFileName;
+				mesh.materialLibs.push_back( mtlFileName );
+			}
+			else if ( semanticToken.compare( "v" ) == 0 )
+			{
+				vector_t v;
+				ss >> v.x;
+				ss >> v.y;
+				ss >> v.z;
+				mesh.vertices.push_back( v );
+			}
+			else if ( semanticToken.compare( "vn" ) == 0 )
+			{
+				vector_t v;
+				ss >> v.x;
+				ss >> v.y;
+				ss >> v.z;
+				mesh.normals.push_back( v );
+			}
+			else if ( semanticToken.compare( "vt" ) == 0 ) // Texture UVs
+			{
+				vector_t v;
+				ss >> v.x;
+				if( !ss.eof() )
+				{
+					ss >> v.y;
+				}
+				if ( !ss.eof() )
+				{
+					ss >> v.z;
+				}
+				mesh.uvs.push_back( v );
+			}
+			else if ( semanticToken.compare( "vp" ) == 0 ) // Parameter space vertices
+			{
+				assert( false ); // Unimplemented
+			}
+			else if ( semanticToken.compare( "s" ) == 0 ) // Smooth shading
+			{
+				ss >> state.smoothGroup;
+			}
+			else if ( semanticToken.compare( "o" ) == 0 ) // Object name
+			{
+				assert( false ); // Unimplemented
+				ss >> state.object;
+			}
+			else if ( semanticToken.compare( "g" ) == 0 ) // Group name
+			{
+				ss >> state.group;
+			}
+			else if ( semanticToken.compare( "usemtl" ) == 0 ) // Material for element
+			{
+				ss >> state.material;
+				mesh.groups[ state.group ].material = state.material;
+			}
+			else if ( semanticToken.compare( "f" ) == 0 ) // Faces
+			{
+				objFace_t face;
+
+				while( !ss.eof() )
+				{
+					objIndex_t indices;
+
+					std::string facePt;
+					ss >> facePt;
+					std::stringstream vertexStream( facePt );
+					
+					if( !vertexStream.rdbuf()->in_avail() )
+						break;
+
+					int32_t elementIx = 0;
+
+					while( !vertexStream.eof() && ( elementIx < 3 ) )
+					{
+						std::string token;
+						std::getline( vertexStream, token, '/' );
+
+						std::stringstream tokenStream;
+						tokenStream.clear();
+						tokenStream.str( token );
+
+						if( tokenStream.eof() )
+						{
+							++elementIx;
+							break;
+						}
+
+						int32_t index;
+						tokenStream >> index;
+
+						index -= 1;
+
+						if( elementIx == 0 )
+						{
+							indices.vertexIx = index;
+						} 
+						else if( elementIx == 1 )
+						{
+							indices.uvIx = index;
+						}
+						else if ( elementIx == 2 )
+						{
+							indices.normalIx = index;
+						}
+						++elementIx;
+					}					
+					face.vertices.push_back( indices );
+				}
+
+				objGroup_t& group = mesh.groups[ state.group ];
+				objSmoothingGroup_t& smoothingGroup = group.smoothingGroups[ state.smoothGroup ];
+				smoothingGroup.faces.push_back( face );
+			}
+			else if ( semanticToken.compare( "l" ) == 0 ) // Lines
+			{
+				assert( false ); // Unimplemented
+			}
+		}
+
+		inputStream.close();		
 	}
 
 	/*

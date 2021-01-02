@@ -14,6 +14,7 @@
 #include <limits>
 #include <iostream>
 #include <string>
+#include <assert.h>
 
 static double PI = 3.14159265358979323846;
 
@@ -317,7 +318,7 @@ bool operator==( const Vector<D, T>& u, const Vector<D, T>& v )
 {
 	for ( size_t i = 0; i < D; ++i )
 	{
-		if ( u.data[ i ] != v.data[ i ] )
+		if ( u[ i ] != v[ i ] )
 		{
 			return false;
 		}

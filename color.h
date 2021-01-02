@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <cstdint>
+#include <algorithm>
 
 #include "common.h"
 
@@ -14,6 +15,15 @@ struct RgbaTuple
 	T	r;
 };
 using RGBA = RgbaTuple<uint8_t>;
+
+
+template<typename T>
+struct RgbTuple
+{
+	T	b;
+	T	g;
+	T	r;
+};
 
 
 union Pixel
@@ -124,6 +134,14 @@ public:
 		}
 	}
 
+	Color( const RgbTuple<float> rgb, float a = 1.0f )
+	{
+		u.rgba.r = rgb.r;
+		u.rgba.g = rgb.g;
+		u.rgba.b = rgb.b;
+		u.rgba.a = a;
+	}
+
 	float& operator[]( const uint32_t i )
 	{
 		if ( i >= 4 )
@@ -173,19 +191,75 @@ public:
 		return *this;
 	}
 
-	inline RgbaTuple<float> AsFloatRGBA() const
+	bool operator==( const Color& color ) const
+	{
+		for ( int32_t i = 0; i < 4; ++i )
+		{
+			if ( fabs( u.vec[ i ] - color.u.vec[ i ] ) > 1e-7 )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	inline float& r()
+	{
+		return u.rgba.r;
+	}
+
+	inline float& g()
+	{
+		return u.rgba.g;
+	}
+
+	inline float& b()
+	{
+		return u.rgba.b;
+	}
+
+	inline float& a()
+	{
+		return u.rgba.a;
+	}
+
+	inline RgbaTuple<float>& rgba()
 	{
 		return u.rgba;
 	}
 
-	inline RgbaTuple<float>& Rgba()
+	inline float r() const
+	{
+		return u.rgba.r;
+	}
+
+	inline float g() const
+	{
+		return u.rgba.g;
+	}
+
+	inline float b() const
+	{
+		return u.rgba.b;
+	}
+
+	inline float a() const
+	{
+		return u.rgba.a;
+	}
+
+	inline RgbaTuple<float> rgba() const
 	{
 		return u.rgba;
 	}
 
-	inline RgbaTuple<float> Rgba() const
+	inline RgbTuple<float> rgb() const
 	{
-		return u.rgba;
+		RgbTuple<float> rgb;
+		rgb.r = u.rgba.r;
+		rgb.g = u.rgba.g;
+		rgb.b = u.rgba.b;
+		return rgb;
 	}
 
 	inline Color Inverse() const

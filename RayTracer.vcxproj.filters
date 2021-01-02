@@ -30,6 +30,9 @@
     <ClCompile Include="color.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="rasterizer.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bitmap.h">
@@ -50,9 +53,6 @@
     <ClInclude Include="rasterLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="model.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resourceManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -69,6 +69,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mathVector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="globals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

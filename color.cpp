@@ -39,19 +39,19 @@ Color BlendColor( const Color& src, const Color& dest, const blendMode_t blendMo
 		}
 		case blendMode_t::SRCALPHA:
 		{
-			return Lerp( dest, src, src.Rgba().a );
+			return Lerp( dest, src, src.rgba().a );
 		}
 		case blendMode_t::DESTALPHA:
 		{
-			return Lerp( dest, src, dest.Rgba().a );
+			return Lerp( dest, src, dest.rgba().a );
 		}
 		case blendMode_t::INVSRCALPHA:
 		{
-			return Lerp( dest, src, 1.0f - src.Rgba().a );
+			return Lerp( dest, src, 1.0f - src.rgba().a );
 		}
 		case blendMode_t::INVDESTALPHA:
 		{
-			return Lerp( dest, src, 1.0f - dest.Rgba().a );
+			return Lerp( dest, src, 1.0f - dest.rgba().a );
 		}
 		case blendMode_t::INVSRCCOLOR:
 		{

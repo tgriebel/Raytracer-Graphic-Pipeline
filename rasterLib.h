@@ -1,43 +1,25 @@
 #pragma once
 
-/*
-===================================
-BlendColors
-- Alpha blend two R8G8B8A8 values
-===================================
-*/
-uint32_t BlendColors( uint32_t c1, uint32_t c2 )
-{
-	uint32_t color1 = ( 0xFFFFFF00 & c1 );
-	uint32_t color2 = ( 0xFFFFFF00 & c2 );
-	double alpha1 = ( (double) ( 0x000000FF & c1 ) ) / 255.0f;
-	double alpha2 = ( (double) ( 0x000000FF & c2 ) ) / 255.0f;
-
-	return   ( (uint32_t) ( ( color1 & 0xFF000000 ) * alpha1 + ( color2 & 0xFF000000 ) * alpha2 * ( 1 - alpha1 ) ) & 0xFF000000 )
-		| ( (uint32_t) ( ( color1 & 0x00FF0000 ) * alpha1 + ( color2 & 0x00FF0000 ) * alpha2 * ( 1 - alpha1 ) ) & 0x00FF0000 )
-		| ( (uint32_t) ( ( color1 & 0x0000FF00 ) * alpha1 + ( color2 & 0x0000FF00 ) * alpha2 * ( 1 - alpha1 ) ) & 0x0000FF00 );
-}
-
 
 /*
 ===================================
 CompositeBitmaps
 ===================================
 */
-Bitmap CompositeBitmaps( Bitmap& bitmap1, Bitmap& bitmap2 )
+inline Bitmap CompositeBitmaps( Bitmap& bitmap1, Bitmap& bitmap2 )
 {
-	Bitmap tbitmap( bitmap1.GetWidth(), bitmap1.GetHeight() );
+	Bitmap outBitmap( bitmap1.GetWidth(), bitmap1.GetHeight() );
 
 	for ( uint32_t j = 0; j < bitmap1.GetHeight(); ++j ) {
 		for ( uint32_t i = 0; i < bitmap1.GetWidth(); ++i ) {
 
-			uint32_t newColor = BlendColors( bitmap1.GetPixel( i, j ), bitmap2.GetPixel( i, j ) );
+			uint32_t newColor = BlendColor( Color( bitmap1.GetPixel( i, j ) ), Color( bitmap2.GetPixel( i, j ) ), blendMode_t::SRCALPHA ).AsR8G8B8A8();
 
-			tbitmap.SetPixel( i, j, newColor );
+			outBitmap.SetPixel( i, j, newColor );
 		}
 	}
 
-	return tbitmap;
+	return outBitmap;
 }
 
 
@@ -47,7 +29,7 @@ DrawLine
 - Optimized bresenham algorithm
 ===================================
 */
-void DrawLine( Bitmap& bitmap, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Color& color )
+inline void DrawLine( Bitmap& bitmap, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Color& color, blendMode_t blendMode = blendMode_t::SRCALPHA )
 {
 	const int dx = abs( x1 - x0 );
 	const int dy = abs( y1 - y0 );
@@ -58,7 +40,8 @@ void DrawLine( Bitmap& bitmap, int32_t x0, int32_t y0, int32_t x1, int32_t y1, c
 
 	while ( ( x0 != x1 ) || ( y0 != y1 ) )
 	{
-		bitmap.SetPixel( x0, y0, color.AsR8G8B8A8() );
+		Color finalColor = BlendColor( color, bitmap.GetPixel( x0, y0 ), blendMode );
+		bitmap.SetPixel( x0, y0, finalColor.AsR8G8B8A8() );
 
 		const int e2 = 2 * e;
 
@@ -75,6 +58,7 @@ void DrawLine( Bitmap& bitmap, int32_t x0, int32_t y0, int32_t x1, int32_t y1, c
 		}
 	}
 
+	Color finalColor = BlendColor( color, bitmap.GetPixel( x0, y0 ), blendMode );
 	bitmap.SetPixel( x0, y0, color.AsR8G8B8A8() );
 }
 
@@ -84,7 +68,7 @@ FloodFill
 - Performs standard floodfill algorithm
 ===================================
 */
-void FloodFill( Bitmap& bitmap, uint32_t x, uint32_t y, uint32_t tcolor, uint32_t rcolor )
+inline void FloodFill( Bitmap& bitmap, uint32_t x, uint32_t y, uint32_t tcolor, uint32_t rcolor )
 {
 	bool outBounds = ( x >= bitmap.GetWidth() || x < 0 ) || ( y >= bitmap.GetHeight() || y < 0 );
 	if ( outBounds )
@@ -142,7 +126,7 @@ ApplyBlur
 - Performs blur on image
 ===================================
 */
-void ApplyBlur( Bitmap& bitmap, Bitmap& output )
+inline void ApplyBlur( Bitmap& bitmap, Bitmap& output )
 {
 	uint32_t kernelDim = 3;
 
@@ -262,7 +246,7 @@ ProjectPoint
 - Projects point from world space into screen space
 ===================================
 */
-bool ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const bool invertY, const vec4d& worldSpacePt, vec2d& outPoint )
+inline bool ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const bool invertY, const vec4d& worldSpacePt, vec4d& outPoint )
 {
 	// Clip-Space
 	vec4d csPt = mvp * vec4d( worldSpacePt[ 0 ], worldSpacePt[ 1 ], worldSpacePt[ 2 ], 1.0 );
@@ -272,7 +256,10 @@ bool ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const bool inver
 	vec4d ndsPt = vec4d( csPt[ 0 ] / w, csPt[ 1 ] / w, csPt[ 2 ] / w, w );
 
 	// Screen-Space
-	outPoint = vec2d( 0.5 * screenSize[ 0 ] * ( ndsPt[ 0 ] + 1.0 ), 0.5 * screenSize[ 1 ] * ( ndsPt[ 1 ] + 1.0 ) );
+	outPoint[ 0 ] = 0.5 * screenSize[ 0 ] * ( ndsPt[ 0 ] + 1.0 );
+	outPoint[ 1 ] = 0.5 * screenSize[ 1 ] * ( ndsPt[ 1 ] + 1.0 );
+	outPoint[ 2 ] = ndsPt[ 2 ];
+	outPoint[ 3 ] = w;
 
 	if ( invertY )
 	{
@@ -280,4 +267,17 @@ bool ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const bool inver
 	}
 
 	return false;
+}
+
+
+template<typename T>
+inline T Interpolate( const vec3d& baryCoord, const T attrib[3] )
+{
+	T value;
+
+	value = ( baryCoord[ 0 ] * attrib[ 0 ][ 2 ] );
+	value += ( baryCoord[ 1 ] * attrib[ 1 ][ 2 ] );
+	value += ( baryCoord[ 2 ] * attrib[ 2 ][ 2 ] );
+
+	return value;
 }

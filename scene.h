@@ -3,8 +3,9 @@
 #include <vector>
 #include "mathVector.h"
 #include "matrix.h"
-#include "model.h"
+#include "geom.h"
 #include "camera.h"
+#include "color.h"
 
 struct light_t
 {
@@ -25,9 +26,10 @@ public:
 class SceneView
 {
 public:
-	Camera	camera;
-	mat4x4d	viewTransform;
-	mat4x4d	projTransform;
-	mat4x4d	projView;
-	vec2i	targetSize;
+	Camera		camera;
+	mat4x4d		viewTransform;
+	mat4x4d		projTransform;
+	mat4x4d		projView;
+	vec2i		targetSize;
+	blendMode_t	blendMode;
 };
