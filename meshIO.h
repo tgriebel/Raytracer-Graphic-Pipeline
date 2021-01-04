@@ -7,6 +7,7 @@
 #include <sstream>
 #include <limits>
 #include <map>
+#include <iomanip>
 
 namespace MeshIO
 {
@@ -24,7 +25,7 @@ namespace MeshIO
 	static inline void WriteOFF( const std::string& fileName, const Off& mesh );
 
 	static inline void ReadObj( const std::string& fileName, Obj& mesh );
-	// void WriteObj( string fileName, const Obj& mesh );
+	static inline void WriteObj( const std::string& fileName, const Obj& mesh );
 
 	struct vector_t
 	{
@@ -659,6 +660,9 @@ namespace MeshIO
 				while( !ss.eof() )
 				{
 					objIndex_t indices;
+					indices.vertexIx = -1;
+					indices.uvIx = -1;
+					indices.normalIx = -1;
 
 					std::string facePt;
 					ss >> facePt;
@@ -678,7 +682,7 @@ namespace MeshIO
 						tokenStream.clear();
 						tokenStream.str( token );
 
-						if( tokenStream.eof() )
+						if( tokenStream.eof() || ( token.length() == 0 ) )
 						{
 							++elementIx;
 							break;
@@ -719,31 +723,79 @@ namespace MeshIO
 		inputStream.close();		
 	}
 
-	/*
-	void WriteObj( const string fileName, const Obj& mesh )
+	void WriteObj( const std::string& fileName, const Obj& mesh )
 	{
-		fstream file;
+		std::fstream file;
 		file.open( fileName, std::fstream::out );
 
-		for ( int i = 0; i < length; ++i )
+		file << std::fixed << std::showpoint << std::setprecision( 4 );
+
+		file << "# MeshIO Export\n\n\n";
+
+		const size_t vertCnt = mesh.vertices.size();
+		for ( int i = 0; i < vertCnt; ++i )
 		{
-			file << "v " << vertList[ i ].pos[ 0 ] << " " << vertList[ i ].pos[ 1 ] << " " << vertList[ i ].pos[ 2 ] << "\n";
+			file << "v  " << mesh.vertices[ i ].x << " " << mesh.vertices[ i ].y << " " << mesh.vertices[ i ].z << "\n";
+		}
+		file << "# " << vertCnt << " vertices\n\n";
+
+		const size_t normalCnt = mesh.normals.size();
+		for ( int i = 0; i < normalCnt; ++i )
+		{
+			file << "vn " << mesh.normals[ i ].x << " " << mesh.normals[ i ].y << " " << mesh.normals[ i ].z << "\n";
+		}
+		file << "# " << normalCnt << " vertex normals\n\n";
+
+		const size_t uvCnt = mesh.uvs.size();
+		for ( int i = 0; i < uvCnt; ++i )
+		{
+			file << "vt " << mesh.uvs[ i ].x << " " << mesh.uvs[ i ].y << " " << mesh.uvs[ i ].z << "\n";
+		}
+		file << "# " << uvCnt << " texture coords\n\n";
+
+		auto groupIttEnd = mesh.groups.end();
+		for ( auto groupItt = mesh.groups.begin(); groupItt != groupIttEnd; ++groupItt )
+		{			
+			file << "g " << groupItt->first << "\n";
+			file << "usemtl " << groupItt->second.material << "\n";
+
+			objGroup_t group = groupItt->second;
+
+			auto smoothGroupIttEnd = group.smoothingGroups.end();
+			for ( auto smoothGroupItt = group.smoothingGroups.begin(); smoothGroupItt != smoothGroupIttEnd; ++smoothGroupItt )
+			{
+				file << "s " << smoothGroupItt->first << "\n";
+
+				objSmoothingGroup_t smoothGroup = smoothGroupItt->second;
+				
+				auto faceIttEnd = smoothGroup.faces.end();
+				for ( auto faceItt = smoothGroup.faces.begin(); faceItt != faceIttEnd; ++faceItt )
+				{
+					file << "f ";
+
+					auto vertIttEnd = faceItt->vertices.end();
+					for ( auto vertItt = faceItt->vertices.begin(); vertItt != vertIttEnd; ++vertItt )
+					{
+						file << ( 1 + vertItt->vertexIx );
+
+						if ( vertItt->uvIx != -1 )
+						{
+							file << "/" << ( 1 + vertItt->uvIx );
+						}
+
+						if( vertItt->normalIx != -1 )
+						{
+							file << "/" << ( 1 + vertItt->normalIx );
+						}
+
+						file << " ";
+					}
+					file << "\n";
+				}
+				file << "# " << uvCnt << " faces\n\n";
+			}		
 		}
 
-		for ( int i = 0; i < TriCnt; ++i ) {
-
-			vec3d b1 = vec3d( triList[ i ].v1 - triList[ i ].v0 );
-			vec3d b2 = vec3d( triList[ i ].v2 - triList[ i ].v0 );
-
-			vec3d norm = Cross( b1, b2 );
-
-			file << "fn " << norm[ 0 ] << " " << norm[ 1 ] << " " << norm[ 2 ] << "\n";
-		}
-
-		for ( int i = 0; i < TriCnt; ++i ) {
-
-			file << "f " << ( i * 3 + 1 ) << " " << ( i * 3 + 1 + 1 ) << " " << ( i * 3 + 2 + 1 ) << "\n";
-		}
+		file.close();
 	}
-	*/
 };

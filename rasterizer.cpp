@@ -6,7 +6,12 @@
 #include "globals.h"
 #include "image.h"
 
-static Image<float> zBuffer( RenderWidth, RenderHeight, "_zbuffer" );
+static Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
+
+//
+#include <map>
+static std::map<float,float> zBufferValuesDbg;
+//
 
 extern Scene scene;
 extern Bitmap* depthBuffer;
@@ -126,7 +131,7 @@ void DrawRay( Bitmap& bitmap, const SceneView& view, const Ray& ray, const Color
 	vec4d ssPt[ 2 ];
 	vec4d wsPt[ 2 ];
 	wsPt[ 0 ] = vec4d( ray.o, 1.0 );
-	wsPt[ 1 ] = vec4d( ray.o + ray.d, 1.0 );
+	wsPt[ 1 ] = vec4d( ray.GetEndPoint(), 1.0 );
 	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), true, wsPt[ 0 ], ssPt[ 0 ] );
 	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), true, wsPt[ 1 ], ssPt[ 1 ] );
 	DrawLine( bitmap, (int)ssPt[ 0 ][ 0 ], (int)ssPt[ 0 ][ 1 ], (int)ssPt[ 1 ][ 0 ], (int)ssPt[ 1 ][ 1 ], color.AsR8G8B8A8() );
@@ -201,14 +206,21 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 
 						if ( ( baryPt[ 0 ] >= 0 ) && ( baryPt[ 1 ] >= 0 ) && ( baryPt[ 2 ] >= 0 ) )
 						{
+							
 							vec3d normal = baryPt[ 0 ] * triList[ i ].v0.normal;
 							normal += baryPt[ 1 ] * triList[ i ].v1.normal;
 							normal += baryPt[ 2 ] * triList[ i ].v2.normal;
 							normal = normal.Normalize();
+							
+							//vec3d normal = triList[ i ].v0.normal.Normalize();
 
 							vec3d lightDir = scene.lights[ 0 ].pos - wsPoint;
 							lightDir = lightDir.Normalize();
 							float diffuse = Saturate( Dot( normal, lightDir ) );
+
+							const Ray viewRay = view.camera.GetViewRay( vec2d( x / (double)RenderWidth, y / (double)RenderHeight ) );
+
+							const Color viewDiffuse = Color( (float)Dot( viewRay.d.Normalize().Reverse(), normal ) );
 
 							Color color = baryPt[ 0 ] * triList[ i ].v0.color;
 							color += baryPt[ 1 ] * triList[ i ].v1.color;
@@ -217,36 +229,14 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 							color += AmbientLight;
 
 							const Color normalColor = Color( 0.5f * normal[ 0 ] + 0.5f, 0.5f * normal[ 1 ] + 0.5f, 0.5f * normal[ 2 ] + 0.5f );
+							//const Color normalColor = Color( normal[ 0 ], normal[ 1 ], normal[ 2 ] );
 
-							if ( ( x < RenderWidth ) && ( x >= 0 ) && ( y < RenderHeight ) && ( y >= 0 ) )
+							if ( depth < zBuffer.GetPixel( x, y ) )
 							{
-								if ( ( zBuffer.GetPixel( x, y ) > depth ) || zBuffer.GetPixel( x, y ) == 0.0 )
-								{
-									bitmap.SetPixel( x, y, color.AsR8G8B8A8() );
-									zBuffer.SetPixel( x, y, depth );
-								}
+								bitmap.SetPixel( x, y, color.AsR8G8B8A8() );
+								zBuffer.SetPixel( x, y, depth );
 							}
 						}
-					}
-				}
-
-				float minZ = FLT_MAX;
-				float maxZ = -FLT_MAX;
-				for ( int32_t y = 0; y < RenderHeight; ++y )
-				{
-					for ( int32_t x = 0; x < RenderWidth; ++x )
-					{
-						minZ = std::min( minZ, zBuffer.GetPixel( x, y ) );
-						maxZ = std::max( maxZ, zBuffer.GetPixel( x, y ) );
-					}
-				}
-
-				for ( int32_t y = 0; y < RenderHeight; ++y )
-				{
-					for ( int32_t x = 0; x < RenderWidth; ++x )
-					{
-						const Color c = ( zBuffer.GetPixel( x, y ) - minZ ) / ( maxZ - minZ );
-						depthBuffer->SetPixel( x, y, c.AsR8G8B8A8() );
 					}
 				}
 			}
@@ -279,6 +269,32 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 			vec3d zAxis;
 			OrthoMatrixToAxis( model.transform, origin, xAxis, yAxis, zAxis );
 			DrawWorldAxis( bitmap, view, 20.0, origin, xAxis, yAxis, zAxis );
+		}
+	}
+
+	float minZ = FLT_MAX;
+	float maxZ = -FLT_MAX;
+	for ( int32_t y = 0; y < RenderHeight; ++y )
+	{
+		for ( int32_t x = 0; x < RenderWidth; ++x )
+		{
+			const float zValue = zBuffer.GetPixel( x, y );
+
+			minZ = std::min( minZ, zValue );
+			maxZ = std::max( maxZ, zValue );
+		}
+	}
+
+	for ( int32_t y = 0; y < RenderHeight; ++y )
+	{
+		for ( int32_t x = 0; x < RenderWidth; ++x )
+		{
+			const float zValue = zBuffer.GetPixel( x, y );
+			const float packedZ = ( zValue - minZ ) / ( maxZ - minZ );
+			zBufferValuesDbg[ zValue ] = packedZ;
+
+			const Color c = Color( packedZ );
+			depthBuffer->SetPixel( x, y, c.AsR8G8B8A8() );
 		}
 	}
 }

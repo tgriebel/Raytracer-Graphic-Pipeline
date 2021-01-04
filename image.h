@@ -8,21 +8,21 @@ class Image
 {
 public:
 
-	Image()
+	Image() : ~Image()
 	{
-		Clear();
-		name = "";
+		
 	}
 
-	Image( const uint32_t _width, const uint32_t _height, const char* name_ = "" )
+	Image( const uint32_t _width, const uint32_t _height, const T _default = static_cast<T>( 0.0 ), const char* _name = "" )
 	{
-		Clear();
-		name = name_;
+		name = _name;
 
 		width = _width;
 		height = _height;
 		length = width * height;
 		buffer = new T[ length ];
+
+		Clear( _default );
 	}
 
 	~Image()
@@ -78,11 +78,11 @@ public:
 		return buffer[ index ];
 	}
 
-	void Clear()
+	void Clear( const T& fill )
 	{
 		for ( uint32_t i = 0; i < length; ++i )
 		{
-			buffer[ i ] = static_cast<T>( 0 );
+			buffer[ i ] = fill;
 		}
 	}
 

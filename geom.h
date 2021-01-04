@@ -8,13 +8,12 @@
 
 struct Ray
 {
-	Ray() : t( 0.0 ), mint( 1e-7 ), maxt( DBL_MAX ) {}
+	Ray() : mint( 1e-7 ), maxt( DBL_MAX ) {}
 
-	Ray( const vec3d& origin, const vec3d& target, const double _minT = 0.0, const double _maxT = DBL_MAX )
+	Ray( const vec3d& origin, const vec3d& target, const double _minT = 1e-7, const double _maxT = DBL_MAX )
 	{
 		o = origin;
 		d = target - origin;
-		t = -1.0;
 		mint = std::max( 0.0, _minT );
 		maxt = std::max( 0.0, _maxT );
 
@@ -24,34 +23,35 @@ struct Ray
 		}
 	}
 
-	void MarchTo( const double _t )
+	bool Inside( const double _t ) const
 	{
-		t = Clamp( _t, mint, maxt );
+		return ( _t >= mint ) && ( _t <= maxt );
 	}
 
-	vec3d GetOrigin()
+	vec3d GetPoint( const double _t ) const
+	{
+		double t = Clamp( _t, mint, maxt );
+		return ( o + t * d );
+	}
+
+	vec3d GetOrigin() const
 	{
 		return o;
 	}
 
-	vec3d GetPoint()
+	vec3d GetEndPoint() const
 	{
-		return ( o + t * d );
+		return ( o + d );
 	}
 
-	vec3d GetEndPoint()
-	{
-		return ( o + maxt * d );
-	}
-
-	vec3d GetVector()
+	vec3d GetVector() const
 	{
 		return d.Normalize();
 	}
 
 	vec3d d;
 	vec3d o;
-	double t;
+private:
 	double mint;
 	double maxt;
 };
@@ -298,18 +298,21 @@ inline vec3d PointToBarycentric( const vec3d& pt, const vec3d& v0, const vec3d& 
 
 
 // Möller–Trumbore ray-triangle intersection algorithm
-inline bool RayToTriangleIntersection( Ray& r, const Triangle& tri, bool& outBackface, double& outT )
+inline bool RayToTriangleIntersection( const Ray& r, const Triangle& tri, bool& outBackface, double& outT )
 {
 	const double	epsilon	= 1e-7;
 	const vec3d		e0		= tri.e0;
 	const vec3d		e1		= tri.e2;
 	const vec3d		p		= Cross( r.d, e1 );
-	const vec3d		h		= ( r.o - Trunc<4, 1>( tri.v0.pos ) );
+	const vec3d		h		= ( r.GetOrigin() - Trunc<4, 1>( tri.v0.pos ) );
 	const vec3d		q		= Cross( h, e0 );
 	const double	det		= Dot( e0, p );
 	const double	invDet	= ( 1.0 / det );
 	const double	u		= invDet * Dot( h, p );
 	const double	v		= invDet * Dot( r.d, q );
+
+	outT = 0.0;
+	outBackface = true;
 
 	if ( fabs( det ) < epsilon ) // Ray is parallel
 	{
@@ -326,10 +329,11 @@ inline bool RayToTriangleIntersection( Ray& r, const Triangle& tri, bool& outBac
 		return false;
 	}
 
-	outT = Dot( e1, q ) * invDet;
+	const double t = Dot( e1, q ) * invDet;
 
-	if ( ( outT >= r.mint ) && ( outT <= r.maxt ) ) // Within ray parameterization
+	if ( r.Inside( t ) ) // Within ray parameterization
 	{
+		outT = t;
 		outBackface = ( det < epsilon );
 		//outBackface = Dot( r.d, tri.n ) >= 0.0; // winding order independent
 		return true;
@@ -341,7 +345,8 @@ inline bool RayToTriangleIntersection( Ray& r, const Triangle& tri, bool& outBac
 }
 
 
-uint32_t LoadModel( std::string path, const uint32_t vb, const uint32_t ib );
-uint32_t LoadModelObj( std::string path, const uint32_t vb, const uint32_t ib );
+uint32_t LoadModel( const std::string& path, const uint32_t vb, const uint32_t ib );
+uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_t ib );
+void StoreModelObj( const std::string& path, const uint32_t modelIx );
 void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance );
 uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& size, const vec2i& cellCnt, const material_t& material );

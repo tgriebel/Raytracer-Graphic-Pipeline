@@ -43,7 +43,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triInde
 
 	sample_t sample;
 
-	sample.pt = r.o + t * r.d;
+	sample.pt = r.GetPoint( t );
 	sample.t = t;
 
 	const vec3d b = PointToBarycentric( sample.pt, Trunc<4, 1>( tri.v0.pos ), Trunc<4, 1>( tri.v1.pos ), Trunc<4, 1>( tri.v2.pos ) );
@@ -60,7 +60,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triInde
 	vec4d mixedColor = b[ 0 ] * color0 + b[ 1 ] * color1 + b[ 2 ] * color2;
 	sample.color = Vec4dToColor( mixedColor );
 
-	sample.surfaceDot = Dot( r.d.Normalize(), sample.normal );
+	sample.surfaceDot = Dot( r.GetVector(), sample.normal );
 	if ( sample.surfaceDot > 0.0 )
 	{
 		sample.hitCode = HIT_BACKFACE;
@@ -150,7 +150,7 @@ sample_t RayTrace_r( Ray& ray, const uint32_t bounceNum )
 		Color finalColor = Color::Black;
 		const material_t& material = scene.models[ surfaceSample.modelIx ].material;
 
-		vec3d viewVector = ray.d.Reverse();
+		vec3d viewVector = ray.GetVector().Reverse();
 		viewVector = viewVector.Normalize();
 
 		const size_t lightCnt = scene.lights.size();
@@ -159,7 +159,6 @@ sample_t RayTrace_r( Ray& ray, const uint32_t bounceNum )
 			vec3d& lightPos = scene.lights[ li ].pos;
 
 			Ray shadowRay = Ray( surfaceSample.pt, lightPos );
-			shadowRay.t = DBL_MAX;
 
 //			DrawRay( *dbg.topWire, views[ VIEW_TOP ], shadowRay, Color::Black );
 //			DrawRay( *dbg.sideWire, views[ VIEW_SIDE ], shadowRay, Color::Black );
@@ -177,7 +176,7 @@ sample_t RayTrace_r( Ray& ray, const uint32_t bounceNum )
 			{
 				const double intensity = scene.lights[ li ].intensity;
 
-				vec3d lightDir = shadowRay.d;
+				vec3d lightDir = shadowRay.GetVector();
 				lightDir = lightDir.Normalize();
 
 				vec3d halfVector = ( viewVector + lightDir ).Normalize();
@@ -404,19 +403,23 @@ void BuildScene()
 
 	modelIx = LoadModelObj( std::string( "models/teapot.obj" ), vb, ib );
 
+	{
+	//	StoreModelObj( std::string( "models/teapotout.obj" ), modelIx );
+	}
+
 	//modelIx = LoadModel( std::string( "models/teapot.off" ), vb, ib );
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
-
+		
 		ModelInstance teapot0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 0.0 ), vec3d( 0.0, 0.0, -90.0 ), 1.0, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, false, Color::Yellow, &teapot0 );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Yellow, &teapot0 );
 		scene.models.push_back( teapot0 );
 
 		ModelInstance teapot1;
-		modelMatrix = BuildModelMatrix( vec3d( -30.0, -50.0, 0.0 ), vec3d( 0.0, 0.0, -45.0 ), 1.0, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, false, Color::Green, &teapot1 );
+		modelMatrix = BuildModelMatrix( vec3d( -30.0, -50.0, 0.0 ), vec3d( 0.0, 0.0, 30.0 ), 1.0, RHS_XZY );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Green, &teapot1 );
 		scene.models.push_back( teapot1 );
 	}
 

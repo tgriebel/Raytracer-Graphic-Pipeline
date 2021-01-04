@@ -78,4 +78,33 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="models\teapotout.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\teapot.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\box 2.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\arma.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\box.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\box_ori.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\sphere.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\sphere_box.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\sphere3.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+  </ItemGroup>
 </Project>

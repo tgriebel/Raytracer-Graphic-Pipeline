@@ -6,7 +6,7 @@
 
 extern ResourceManager rm;
 
-uint32_t LoadModel( std::string path, const uint32_t vb, const uint32_t ib )
+uint32_t LoadModel( const std::string& path, const uint32_t vb, const uint32_t ib )
 {
 	MeshIO::Off offMesh;
 	MeshIO::ReadOFF( path, offMesh );
@@ -53,7 +53,7 @@ uint32_t LoadModel( std::string path, const uint32_t vb, const uint32_t ib )
 }
 
 
-uint32_t LoadModelObj( std::string path, const uint32_t vb, const uint32_t ib )
+uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_t ib )
 {
 	MeshIO::Obj objMesh;
 	MeshIO::ReadObj( path, objMesh );
@@ -83,13 +83,29 @@ uint32_t LoadModelObj( std::string path, const uint32_t vb, const uint32_t ib )
 					const int32_t normalIx = faces[ faceIx ].vertices[ i ].normalIx;
 
 					MeshIO::vector_t srcVertex = objMesh.vertices[ vertIx ];
-					MeshIO::vector_t srcUv = objMesh.uvs[ uvIx ];
-					MeshIO::vector_t srcNormal = objMesh.normals[ normalIx ];
-
+					
 					vert.pos = vec4d( srcVertex.x, srcVertex.y, srcVertex.z, srcVertex.w );
 					vert.color = Color::White;
-					vert.normal = vec3d( srcNormal.x, srcNormal.y, srcNormal.z ).Reverse();
-					vert.uv = vec2d( srcUv.x, srcUv.y );
+
+					if( uvIx != -1 )
+					{
+						MeshIO::vector_t srcUv = objMesh.uvs[ uvIx ];
+						vert.uv = vec2d( srcUv.x, srcUv.y );
+					}
+					else
+					{
+						vert.uv = vec2d( 0.0, 0.0 );
+					}
+
+					if ( normalIx != -1 )
+					{
+						MeshIO::vector_t srcNormal = objMesh.normals[ normalIx ];
+						vert.normal = vec3d( srcNormal.x, srcNormal.y, srcNormal.z ).Normalize();
+					}
+					else
+					{
+						vert.normal = vec3d( 1.0, 1.0, 1.0 ).Normalize();
+					}
 
 					auto it = std::find( uniqueVertices.begin(), uniqueVertices.end(), vert );
 
@@ -139,7 +155,70 @@ uint32_t LoadModelObj( std::string path, const uint32_t vb, const uint32_t ib )
 	model->material.Ks = 1.0;
 	model->material.Kr = 1.0;
 
+	MeshIO::WriteObj( std::string( "models/teapot-outtest.obj" ), objMesh );
 	return modelIx;
+}
+
+
+void StoreModelObj( const std::string& path, const uint32_t modelIx )
+{
+	const Model* model = rm.GetModel( modelIx );
+
+	MeshIO::Obj meshObj;
+	for ( uint32_t i = model->vbOffset; i < model->vbEnd; ++i )
+	{
+		const vertex_t* v = rm.GetVertex( model->vb, i );
+
+		MeshIO::vector_t vert;
+		vert.x = v->pos[ 0 ];
+		vert.y = v->pos[ 1 ];
+		vert.z = v->pos[ 2 ];
+		vert.w = v->pos[ 3 ];
+		meshObj.vertices.push_back( vert );
+
+		MeshIO::vector_t normal;
+		normal.x = v->normal[ 0 ];
+		normal.y = v->normal[ 1 ];
+		normal.z = v->normal[ 2 ];
+		normal.w = 0.0;
+		meshObj.normals.push_back( normal );
+
+		MeshIO::vector_t uv;
+		uv.x = v->uv[ 0 ];
+		uv.y = v->uv[ 1 ];
+		uv.z = 0.0;
+		uv.w = 0.0;
+		meshObj.uvs.push_back( uv );
+	}
+
+	MeshIO::objGroup_t group;
+	MeshIO::objSmoothingGroup_t smoothingGroup;
+
+	group.material = "default";
+
+	for ( uint32_t i = model->ibOffset; i < model->ibEnd; i += 3 )
+	{
+		MeshIO::objFace_t face;
+		for( uint32_t j = 0; j < 3; ++ j )
+		{
+			const uint32_t index = rm.GetIndex( model->vb, i + j ) - model->vbOffset;
+
+			MeshIO::objIndex_t indexTuple;
+			indexTuple.vertexIx = index;
+			indexTuple.uvIx = index;
+			indexTuple.normalIx = index;
+		
+			// TODO: deduplicate
+			face.vertices.push_back( indexTuple );
+		}
+
+		smoothingGroup.faces.push_back( face );
+	}
+
+	group.smoothingGroups[ 0 ] = smoothingGroup;
+	meshObj.groups[ model->name ] = group;
+
+	MeshIO::WriteObj( std::string( "models/teapotout.obj" ), meshObj );
 }
 
 
@@ -194,6 +273,10 @@ void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, co
 		for ( vertMapIter iter = vertToPolyMap.begin(); iter != vertToPolyMap.end(); ++iter )
 		{
 			vec3d interpretedNormal = vec3d( 0.0, 0.0, 0.0 );
+			vec3d interpretedTangent = vec3d( 0.0, 0.0, 0.0 );
+			vec3d interpretedBitangent = vec3d( 0.0, 0.0, 0.0 );
+
+			vertex_t* vertex = rm.GetVertex( vb, iter->first );
 
 			for ( std::deque<triIndices>::iterator polyListIter = iter->second.begin(); polyListIter != iter->second.end(); ++polyListIter )
 			{
@@ -201,22 +284,32 @@ void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, co
 				const uint32_t i1 = std::get<1>( *polyListIter );
 				const uint32_t i2 = std::get<2>( *polyListIter );
 
-				vec3d pt0 = Trunc<4, 1>( rm.GetVertex( vb, i0 )->pos );
-				vec3d pt1 = Trunc<4, 1>( rm.GetVertex( vb, i1 )->pos );
-				vec3d pt2 = Trunc<4, 1>( rm.GetVertex( vb, i2 )->pos );
+				// These are transformed positions; this is critical for proper normals
+				const vec3d pt0 = Trunc<4, 1>( rm.GetVertex( vb, i0 )->pos );
+				const vec3d pt1 = Trunc<4, 1>( rm.GetVertex( vb, i1 )->pos );
+				const vec3d pt2 = Trunc<4, 1>( rm.GetVertex( vb, i2 )->pos );
 
-				vec3d b0 = ( pt1 - pt0 );
-				vec3d b1 = ( pt2 - pt0 );
+				const vec3d tangent = ( pt1 - pt0 ).Normalize();
+				const vec3d bitangent = ( pt2 - pt0 ).Normalize();
+				const vec3d normal = Cross( tangent, bitangent ).Normalize();
 
-				interpretedNormal += Cross( b0, b1 ).Normalize();
+				interpretedNormal += normal;
+				interpretedTangent += tangent;
+				interpretedBitangent += bitangent;
 			}
 
-			vertex_t* vertex = rm.GetVertex( vb, iter->first );
-
 			interpretedNormal.FlushDenorms();
+			interpretedTangent.FlushDenorms();
+			interpretedBitangent.FlushDenorms();
+
 			vertex->normal = interpretedNormal.Normalize();
-			// vertex->normal = vertex->normal.Reverse();
+			vertex->tangent = interpretedTangent.Normalize();
+			vertex->bitangent = interpretedBitangent.Normalize();
 		}
+	}
+	else
+	{
+		// TODO: fix normals on this path
 	}
 
 	for ( uint32_t i = model->ibOffset; i < model->ibEnd; i += 3 )
@@ -230,7 +323,11 @@ void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, co
 		vertex_t& v0 = *rm.GetVertex( vb, indices[ 0 ] );
 		vertex_t& v1 = *rm.GetVertex( vb, indices[ 1 ] );
 		vertex_t& v2 = *rm.GetVertex( vb, indices[ 2 ] );
-
+		/*
+		v0.normal = vec3d( 1.0, 0.0, 0.0 );
+		v1.normal = vec3d( 0.0, 1.0, 0.0 );
+		v2.normal = vec3d( 0.0, 0.0, 1.0 );
+		*/
 		outInstance->triList.push_back( Triangle( v0, v1, v2 ) );
 	}
 

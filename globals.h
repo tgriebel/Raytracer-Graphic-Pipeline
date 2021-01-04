@@ -8,8 +8,8 @@
 
 #define USE_AABB		1
 #define USE_RELFECTION	0
-#define USE_SHADOWS		1
-#define USE_RAYTRACE	1
+#define USE_SHADOWS		0
+#define USE_RAYTRACE	0
 #define USE_SS4X		0
 #define USE_RASTERIZE	1
 #define DRAW_WIREFRAME	1
@@ -20,7 +20,7 @@
 #if 0
 static const uint32_t	RenderWidth			= 1920;
 static const uint32_t	RenderHeight		= 1080;
-#elif 0
+#elif 1
 static const uint32_t	RenderWidth			= 720;
 static const uint32_t	RenderHeight		= 480;
 #elif 1
@@ -31,13 +31,13 @@ static const double		HalfRenderWidth		= ( RenderWidth * 0.5 );
 static const double		HalfRenderHeight	= ( RenderHeight * 0.5 );
 static const double		AspectRatio			= RenderWidth / static_cast<double>( RenderHeight );
 static const double		CameraFov			= 90.0f;
-static const double		CameraNearPlane		= 0.0001f;
+static const double		CameraNearPlane		= 0.1f;
 static const double		CameraFarPlane		= 1000.0f;
 static const vec2i		RenderSize			= vec2i( RenderWidth, RenderHeight );
 
 static const float		AmbientLight		= 0.2f;
 static const double		SpecularPower		= 15.0;
-static const double		MaxT				= 10000.0;
+static const double		MaxT				= 1000.0;
 static const uint32_t	MaxBounces			= 1;
 
 enum axisMode_t : uint32_t
@@ -81,9 +81,9 @@ struct debug_t
 
 enum viewType_t
 {
-	VIEW_CAMERA = 0,
-	VIEW_TOP = 1,
-	VIEW_SIDE = 2,
+	VIEW_CAMERA	= 0,
+	VIEW_TOP	= 1,
+	VIEW_SIDE	= 2,
 };
 
 

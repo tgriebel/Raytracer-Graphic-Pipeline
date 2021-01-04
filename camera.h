@@ -34,7 +34,7 @@ public:
 	}
 	*/
 
-	plane_t GetFocalPlane()
+	plane_t GetFocalPlane() const
 	{
 		plane_t plane;
 		plane.origin = origin - focalLength * zAxis;
@@ -43,7 +43,7 @@ public:
 		return plane;
 	}
 
-	Ray GetViewRay( const vec2d& uv )
+	Ray GetViewRay( const vec2d& uv ) const
 	{
 		// TODO: clip by near/far planes
 		plane_t plane = GetFocalPlane();
@@ -51,12 +51,11 @@ public:
 		vec4d viewPt = corner + vec4d( 2.0 * uv[ 0 ] * plane.halfWidth + 2.0 * uv[ 1 ] * plane.halfHeight );
 
 		Ray ray = Ray( Trunc<4, 1>( origin ), Trunc<4, 1>( viewPt ), 0.0, far );
-		ray.t = ray.maxt;
 
 		return ray;
 	}
 
-	mat4x4d ToViewMatrix()
+	mat4x4d ToViewMatrix() const
 	{
 		return CreateMatrix4x4(	xAxis[ 0 ],	xAxis[ 1 ],	xAxis[ 2 ],	-Dot( xAxis, origin ),
 								yAxis[ 0 ],	yAxis[ 1 ],	yAxis[ 2 ],	-Dot( yAxis, origin ),
@@ -64,7 +63,7 @@ public:
 								0.0,		0.0,		0.0,		1.0 );
 	}
 
-	mat4x4d ToOrthographicProjMatrix( double w, double h )
+	mat4x4d ToOrthographicProjMatrix( double w, double h ) const
 	{
 		const double width = ( w != 0.0 ) ? w : 1.0;
 		const double height = ( h != 0.0 ) ? h : 1.0;
@@ -81,7 +80,7 @@ public:
 		return m;
 	}
 
-	mat4x4d ToPerspectiveProjMatrix()
+	mat4x4d ToPerspectiveProjMatrix() const
 	{
 		mat4x4d m;
 		m[ 0 ][ 0 ] = 1.0 / halfFovX;
