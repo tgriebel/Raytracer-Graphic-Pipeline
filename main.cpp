@@ -122,7 +122,7 @@ bool IntersectScene( Ray& ray, const bool cullBackfaces, const bool stopAtFirstI
 }
 
 
-sample_t RayTrace_r( Ray& ray, const uint32_t bounceNum )
+sample_t RayTrace_r( Ray& ray, const uint32_t rayDepth )
 {
 	double tnear = 0;
 	double tfar = 0;
@@ -193,14 +193,14 @@ sample_t RayTrace_r( Ray& ray, const uint32_t bounceNum )
 
 		Color relfectionColor = Color::Black;
 #if USE_RELFECTION
-		if ( bounceNum < MaxBounces )
+		if ( rayDepth < MaxBounces )
 		{
 			Ray reflectionVector;
 
 			reflectionVector.o = surfaceSample.pt;
 			reflectionVector.d = 2.0 * Dot( viewVector, surfaceSample.normal ) * surfaceSample.normal - viewVector;
 
-			const sample_t reflectSample = RayTrace_r( reflectionVector, bounceNum + 1 );
+			const sample_t reflectSample = RayTrace_r( reflectionVector, rayDepth + 1 );
 			relfectionColor = reflectSample.color;
 		}
 #endif

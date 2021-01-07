@@ -9,7 +9,7 @@
 #define USE_AABB		1
 #define USE_RELFECTION	0
 #define USE_SHADOWS		0
-#define USE_RAYTRACE	0
+#define USE_RAYTRACE	1
 #define USE_SS4X		0
 #define USE_RASTERIZE	1
 #define DRAW_WIREFRAME	1
@@ -32,7 +32,7 @@ static const double		HalfRenderHeight	= ( RenderHeight * 0.5 );
 static const double		AspectRatio			= RenderWidth / static_cast<double>( RenderHeight );
 static const double		CameraFov			= 90.0f;
 static const double		CameraNearPlane		= 0.1f;
-static const double		CameraFarPlane		= 1000.0f;
+static const double		CameraFarPlane		= 200.0f;
 static const vec2i		RenderSize			= vec2i( RenderWidth, RenderHeight );
 
 static const float		AmbientLight		= 0.2f;

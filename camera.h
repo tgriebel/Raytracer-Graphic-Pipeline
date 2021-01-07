@@ -18,7 +18,7 @@ public:
 		near = _near;
 		far = _far;
 		aspect = aspectRatio;
-		focalLength = 1.0 / 1.0;
+		focalLength = far;
 		viewportWidth = 2.0 * halfFovX;
 		viewportHeight = 2.0 * halfFovY;
 		origin = _origin;
@@ -45,12 +45,12 @@ public:
 
 	Ray GetViewRay( const vec2d& uv ) const
 	{
-		// TODO: clip by near/far planes
+		// TODO: clip by near plane
 		plane_t plane = GetFocalPlane();
 		vec4d corner = plane.origin - plane.halfWidth - plane.halfHeight;
 		vec4d viewPt = corner + vec4d( 2.0 * uv[ 0 ] * plane.halfWidth + 2.0 * uv[ 1 ] * plane.halfHeight );
 
-		Ray ray = Ray( Trunc<4, 1>( origin ), Trunc<4, 1>( viewPt ), 0.0, far );
+		Ray ray = Ray( Trunc<4, 1>( origin ), Trunc<4, 1>( viewPt ), 0.0 );
 
 		return ray;
 	}

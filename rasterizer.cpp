@@ -226,14 +226,14 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 							color += baryPt[ 1 ] * triList[ i ].v1.color;
 							color += baryPt[ 2 ] * triList[ i ].v2.color;
 							color *= diffuse;
-							color += AmbientLight;
+							color += 0.05f;
 
 							const Color normalColor = Color( 0.5f * normal[ 0 ] + 0.5f, 0.5f * normal[ 1 ] + 0.5f, 0.5f * normal[ 2 ] + 0.5f );
 							//const Color normalColor = Color( normal[ 0 ], normal[ 1 ], normal[ 2 ] );
 
 							if ( depth < zBuffer.GetPixel( x, y ) )
 							{
-								bitmap.SetPixel( x, y, color.AsR8G8B8A8() );
+								bitmap.SetPixel( x, y, LinearToSrgb( color ).AsR8G8B8A8() );
 								zBuffer.SetPixel( x, y, depth );
 							}
 						}

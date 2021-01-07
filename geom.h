@@ -8,19 +8,17 @@
 
 struct Ray
 {
-	Ray() : mint( 1e-7 ), maxt( DBL_MAX ) {}
+	Ray() : mint( 1e7 ), maxt( DBL_MAX ) {}
 
-	Ray( const vec3d& origin, const vec3d& target, const double _minT = 1e-7, const double _maxT = DBL_MAX )
+	Ray( const vec3d& origin, const vec3d& target, const double _minT = 1e-7 )
 	{
 		o = origin;
 		d = target - origin;
-		mint = std::max( 0.0, _minT );
-		maxt = std::max( 0.0, _maxT );
+		t = d.Length();
+		d = d.Normalize();
 
-		if ( mint > maxt )
-		{
-			std::swap( mint, maxt );
-		}
+		mint = std::max( 0.0, _minT );
+		maxt = std::max( 0.0, t - mint );
 	}
 
 	bool Inside( const double _t ) const
@@ -52,6 +50,7 @@ struct Ray
 	vec3d d;
 	vec3d o;
 private:
+	double t;
 	double mint;
 	double maxt;
 };
