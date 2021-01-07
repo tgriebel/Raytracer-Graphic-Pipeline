@@ -222,7 +222,7 @@ SceneView SetupCameraView()
 
 	view.camera = Camera(	vec4d( -280.0, -30.0, 50.0, 0.0 ),
 							vec4d( 0.0, -1.0, 0.0, 0.0 ),
-							vec4d( 0.0, 0.0, 1.0, 0.0 ),
+							vec4d( 0.0, 0.0, -1.0, 0.0 ),
 							vec4d( -1.0, 0.0, 0.0, 0.0 ),
 							CameraFov,
 							AspectRatio,
@@ -243,7 +243,7 @@ SceneView SetupTopView()
 
 	view.camera = Camera(	vec4d( 0.0, 0.0, 280.0, 0.0 ),
 							vec4d( 0.0, -1.0, 0.0, 0.0 ),
-							vec4d( 1.0, 0.0, 0.0, 0.0 ),
+							vec4d( -1.0, 0.0, 0.0, 0.0 ),
 							vec4d( 0.0, 0.0, 1.0, 0.0 ),
 							CameraFov,
 							AspectRatio,
@@ -264,7 +264,7 @@ SceneView SetupSideView()
 
 	view.camera = Camera(	vec4d( 0.0, 280.0, 0.0, 0.0 ),
 							vec4d( -1.0, 0.0, 0.0, 0.0 ),
-							vec4d( 0.0, 0.0, 1.0, 0.0 ),
+							vec4d( 0.0, 0.0, -1.0, 0.0 ),
 							vec4d( 0.0, 1.0, 0.0, 0.0 ),
 							CameraFov,
 							AspectRatio,
@@ -328,7 +328,7 @@ void DrawScene( Bitmap& bitmap )
 			if ( coverage > 0.0 )
 			{
 				int32_t imageX = static_cast<int32_t>( px );
-				int32_t imageY = static_cast<int32_t>( RenderHeight - py - 1 );
+				int32_t imageY = static_cast<int32_t>( py );
 
 				coverage /= subSampleCnt;
 				diffuse /= subSampleCnt;

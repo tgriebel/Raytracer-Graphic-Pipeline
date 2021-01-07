@@ -57,7 +57,7 @@ void DrawCube( Bitmap& bitmap, const SceneView& view, const vec4d& minCorner, co
 	for ( int i = 0; i < 8; ++i )
 	{
 		vec4d pt;
-		ProjectPoint( view.projView, RenderSize, true, corners[ i ], pt );
+		ProjectPoint( view.projView, RenderSize, corners[ i ], pt );
 		ssPts[ i ] = vec2i( static_cast<int32_t>( pt[ 0 ] ), static_cast<int32_t>( pt[ 1 ] ) );
 	}
 
@@ -90,7 +90,7 @@ void DrawWorldAxis( Bitmap& bitmap, const SceneView& view, double size, const ve
 	for ( int i = 0; i < 4; ++i )
 	{
 		vec4d pt;
-		ProjectPoint( view.projView, RenderSize, true, points[ i ], pt );
+		ProjectPoint( view.projView, RenderSize, points[ i ], pt );
 		ssPts[ i ] = vec2i( static_cast<int32_t>( pt[ 0 ] ), static_cast<int32_t>( pt[ 1 ] ) );
 	}
 
@@ -104,7 +104,7 @@ void DrawWorldAxis( Bitmap& bitmap, const SceneView& view, double size, const ve
 void DrawWorldPoint( Bitmap& bitmap, const SceneView& view, const vec4d& point, const int32_t size, const Color& color )
 {
 	vec4d projPt;
-	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), true, point, projPt );
+	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), point, projPt );
 
 	vec2i ssPt = vec2i( static_cast<int32_t>( projPt[ 0 ] ), static_cast<int32_t>( projPt[ 1 ] ) );
 	vec2d halfPt = vec2d( 0.5 * ( (double)size + 0.5 ) );
@@ -132,8 +132,8 @@ void DrawRay( Bitmap& bitmap, const SceneView& view, const Ray& ray, const Color
 	vec4d wsPt[ 2 ];
 	wsPt[ 0 ] = vec4d( ray.o, 1.0 );
 	wsPt[ 1 ] = vec4d( ray.GetEndPoint(), 1.0 );
-	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), true, wsPt[ 0 ], ssPt[ 0 ] );
-	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), true, wsPt[ 1 ], ssPt[ 1 ] );
+	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), wsPt[ 0 ], ssPt[ 0 ] );
+	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), wsPt[ 1 ], ssPt[ 1 ] );
 	DrawLine( bitmap, (int)ssPt[ 0 ][ 0 ], (int)ssPt[ 0 ][ 1 ], (int)ssPt[ 1 ][ 0 ], (int)ssPt[ 1 ][ 1 ], color.AsR8G8B8A8() );
 }
 
@@ -160,9 +160,9 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 			wsPts[ 1 ] = &triList[ i ].v1.pos;
 			wsPts[ 2 ] = &triList[ i ].v2.pos;
 
-			culled += ProjectPoint( mvp, RenderSize, true, *wsPts[ 0 ], ssPts[ 0 ] );
-			culled += ProjectPoint( mvp, RenderSize, true, *wsPts[ 1 ], ssPts[ 1 ] );
-			culled += ProjectPoint( mvp, RenderSize, true, *wsPts[ 2 ], ssPts[ 2 ] );
+			culled += ProjectPoint( mvp, RenderSize, *wsPts[ 0 ], ssPts[ 0 ] );
+			culled += ProjectPoint( mvp, RenderSize, *wsPts[ 1 ], ssPts[ 1 ] );
+			culled += ProjectPoint( mvp, RenderSize, *wsPts[ 2 ], ssPts[ 2 ] );
 
 			if ( culled >= 3 )
 			{

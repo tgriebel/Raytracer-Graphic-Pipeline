@@ -246,7 +246,7 @@ ProjectPoint
 - Projects point from world space into screen space
 ===================================
 */
-inline bool ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const bool invertY, const vec4d& worldSpacePt, vec4d& outPoint )
+inline bool ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const vec4d& worldSpacePt, vec4d& outPoint )
 {
 	// Clip-Space
 	vec4d csPt = mvp * vec4d( worldSpacePt[ 0 ], worldSpacePt[ 1 ], worldSpacePt[ 2 ], 1.0 );
@@ -260,11 +260,6 @@ inline bool ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const boo
 	outPoint[ 1 ] = 0.5 * screenSize[ 1 ] * ( ndsPt[ 1 ] + 1.0 );
 	outPoint[ 2 ] = ndsPt[ 2 ];
 	outPoint[ 3 ] = w;
-
-	if ( invertY )
-	{
-		outPoint[ 1 ] = screenSize[ 1 ] - outPoint[ 1 ];
-	}
 
 	return false;
 }
