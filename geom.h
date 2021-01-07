@@ -334,7 +334,7 @@ inline bool RayToTriangleIntersection( const Ray& r, const Triangle& tri, bool& 
 	{
 		outT = t;
 		outBackface = ( det < epsilon );
-		//outBackface = Dot( r.d, tri.n ) >= 0.0; // winding order independent
+		// outBackface = Dot( r.d, tri.n ) >= 0.0; // winding order independent
 		return true;
 	}
 	else

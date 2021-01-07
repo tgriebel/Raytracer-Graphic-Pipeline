@@ -81,6 +81,8 @@ bool IntersectScene( Ray& ray, const bool cullBackfaces, const bool stopAtFirstI
 	outSample.t = DBL_MAX;
 	outSample.hitCode = HIT_NONE;
 
+	int hitCnt = 0;
+
 	const uint32_t modelCnt = scene.models.size();
 	for ( uint32_t modelIx = 0; modelIx < modelCnt; ++modelIx )
 	{
@@ -109,7 +111,7 @@ bool IntersectScene( Ray& ray, const bool cullBackfaces, const bool stopAtFirstI
 
 				if ( cullBackfaces && isBackface )
 					continue;
-
+					
 				outSample = RecordSurfaceInfo( ray, t, triIx, modelIx );
 
 				if ( stopAtFirstIntersection )
@@ -140,7 +142,7 @@ sample_t RayTrace_r( Ray& ray, const uint32_t rayDepth )
 #endif
 	 
 	sample_t surfaceSample;	
-	if( !IntersectScene( ray, true, true, surfaceSample ) )
+	if( !IntersectScene( ray, true, false, surfaceSample ) )
 	{
 		sample.color = Color::Black;
 		return sample;
@@ -402,12 +404,6 @@ void BuildScene()
 	uint32_t ib = rm.AllocIB();
 
 	modelIx = LoadModelObj( std::string( "models/teapot.obj" ), vb, ib );
-
-	{
-	//	StoreModelObj( std::string( "models/teapotout.obj" ), modelIx );
-	}
-
-	//modelIx = LoadModel( std::string( "models/teapot.off" ), vb, ib );
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
