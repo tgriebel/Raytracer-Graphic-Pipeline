@@ -49,7 +49,7 @@ struct Ray
 
 	vec3d d;
 	vec3d o;
-private:
+// private:
 	double t;
 	double mint;
 	double maxt;
@@ -182,7 +182,6 @@ struct box_t
 	AABB	aabb;
 };
 
-
 struct vertexBuffer_t
 {
 	std::vector<vertex_t> buffer;
@@ -194,6 +193,7 @@ struct indexBuffer_t
 	std::vector<uint32_t> buffer;
 };
 
+using imageHandle_t = uint32_t;
 
 struct Triangle
 {
@@ -253,7 +253,7 @@ public:
 class ModelInstance
 {
 public:
-	std::vector<Triangle>	triList;
+	std::vector<Triangle>	triCache;
 	AABB					aabb;
 	uint32_t				vb;
 	uint32_t				modelIx;
@@ -263,16 +263,21 @@ public:
 
 	void ComputeAABB()
 	{
-		const size_t triCnt = triList.size();
+		const size_t triCnt = triCache.size();
 		for ( size_t i = 0; i < triCnt; ++i )
 		{
-			aabb.Expand( triList[ i ].aabb.min );
-			aabb.Expand( triList[ i ].aabb.max );
+			aabb.Expand( triCache[ i ].aabb.min );
+			aabb.Expand( triCache[ i ].aabb.max );
 		}
 	}
 };
 
 
+/*
+===================================
+PointToBarycentric
+===================================
+*/
 inline vec3d PointToBarycentric( const vec3d& pt, const vec3d& v0, const vec3d& v1, const vec3d& v2 )
 {
 	vec3d e1 = v2 - v1;
@@ -296,7 +301,12 @@ inline vec3d PointToBarycentric( const vec3d& pt, const vec3d& v0, const vec3d& 
 }
 
 
-// Möller–Trumbore ray-triangle intersection algorithm
+/*
+===================================
+RayToTriangleIntersection
+- Möller–Trumbore ray-triangle intersection algorithm
+===================================
+*/
 inline bool RayToTriangleIntersection( const Ray& r, const Triangle& tri, bool& outBackface, double& outT )
 {
 	const double	epsilon	= 1e-7;
@@ -334,7 +344,6 @@ inline bool RayToTriangleIntersection( const Ray& r, const Triangle& tri, bool& 
 	{
 		outT = t;
 		outBackface = ( det < epsilon );
-		// outBackface = Dot( r.d, tri.n ) >= 0.0; // winding order independent
 		return true;
 	}
 	else
@@ -347,5 +356,5 @@ inline bool RayToTriangleIntersection( const Ray& r, const Triangle& tri, bool& 
 uint32_t LoadModel( const std::string& path, const uint32_t vb, const uint32_t ib );
 uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_t ib );
 void StoreModelObj( const std::string& path, const uint32_t modelIx );
-void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance );
-uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& size, const vec2i& cellCnt, const material_t& material );
+void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const material_t& material );
+uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& size, const vec2i& cellCnt );

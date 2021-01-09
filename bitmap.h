@@ -39,15 +39,15 @@ public:
 	void Load( const std::string& filename );
 	void Write( const std::string& filename );
 
-	uint32_t GetSize();
-	uint32_t GetWidth();
-	uint32_t GetHeight();
+	uint32_t GetSize() const;
+	uint32_t GetWidth() const;
+	uint32_t GetHeight() const;
 
 	void ClearImage();
 
-	void GetBuffer( uint32_t buffer[] );
+	void GetBuffer( uint32_t buffer[] ) const;
 
-	uint32_t GetPixel( const int32_t x, const int32_t y );
+	uint32_t GetPixel( const int32_t x, const int32_t y ) const;
 	bool SetPixel( const int32_t x, const int32_t y, const uint32_t color );
 
 private:
@@ -73,7 +73,7 @@ private:
 	} h;
 
 	Pixel* mapdata;
-	uint32_t pixelsNum;
+	uint32_t pixelCnt;
 
 	std::ifstream instream;
 	std::ofstream outstream;

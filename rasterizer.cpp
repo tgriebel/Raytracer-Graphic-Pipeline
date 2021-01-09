@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "globals.h"
 #include "image.h"
+#include "resourceManager.h"
 
 static Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
 
@@ -15,6 +16,7 @@ static std::map<float,float> zBufferValuesDbg;
 
 extern Scene scene;
 extern Bitmap* depthBuffer;
+extern ResourceManager rm;
 
 void OrthoMatrixToAxis( const mat4x4d& m, vec3d& origin, vec3d& xAxis, vec3d& yAxis, vec3d& zAxis );
 void DrawWorldAxis( Bitmap& bitmap, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z );
@@ -147,18 +149,18 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 	for ( uint32_t m = 0; m < modelCnt; ++m )
 	{
 		const ModelInstance& model = scene.models[ m ];
-		const Triangle* triList = model.triList.data();
+		const Triangle* triCache = model.triCache.data();
 
-		const size_t triCnt = model.triList.size();
+		const size_t triCnt = model.triCache.size();
 		for ( uint32_t i = 0; i < triCnt; ++i )
 		{
 			const vec4d* wsPts[ 3 ];
 			vec4d ssPts[ 3 ];
 			int culled = 0;
 
-			wsPts[ 0 ] = &triList[ i ].v0.pos;
-			wsPts[ 1 ] = &triList[ i ].v1.pos;
-			wsPts[ 2 ] = &triList[ i ].v2.pos;
+			wsPts[ 0 ] = &triCache[ i ].v0.pos;
+			wsPts[ 1 ] = &triCache[ i ].v1.pos;
+			wsPts[ 2 ] = &triCache[ i ].v2.pos;
 
 			culled += ProjectPoint( mvp, RenderSize, *wsPts[ 0 ], ssPts[ 0 ] );
 			culled += ProjectPoint( mvp, RenderSize, *wsPts[ 1 ], ssPts[ 1 ] );
@@ -202,16 +204,20 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 						float depth = (float)Interpolate( baryPt, ssPts )[ 2 ];
 						const vec3d wsPoint = vec3d( x, y, depth );
 
-						const vec3d wsBaryPt = PointToBarycentric( vec3d( x, y, depth ), Trunc<4, 1>( triList[ i ].v0.pos ), Trunc<4, 1>( triList[ i ].v1.pos ), Trunc<4, 1>( triList[ i ].v2.pos ) );
+						const vec3d wsBaryPt = PointToBarycentric( vec3d( x, y, depth ), Trunc<4, 1>( triCache[ i ].v0.pos ), Trunc<4, 1>( triCache[ i ].v1.pos ), Trunc<4, 1>( triCache[ i ].v2.pos ) );
 
 						if ( ( baryPt[ 0 ] >= 0 ) && ( baryPt[ 1 ] >= 0 ) && ( baryPt[ 2 ] >= 0 ) )
 						{
 							
-							vec3d normal = baryPt[ 0 ] * triList[ i ].v0.normal;
-							normal += baryPt[ 1 ] * triList[ i ].v1.normal;
-							normal += baryPt[ 2 ] * triList[ i ].v2.normal;
+							vec3d normal = baryPt[ 0 ] * triCache[ i ].v0.normal;
+							normal += baryPt[ 1 ] * triCache[ i ].v1.normal;
+							normal += baryPt[ 2 ] * triCache[ i ].v2.normal;
 							normal = normal.Normalize();
-							
+
+							vec2d uv = baryPt[ 0 ] * triCache[ i ].v0.uv;
+							uv += baryPt[ 1 ] * triCache[ i ].v1.uv;
+							uv += baryPt[ 2 ] * triCache[ i ].v2.uv;
+
 							//vec3d normal = triList[ i ].v0.normal.Normalize();
 
 							vec3d lightDir = scene.lights[ 0 ].pos - wsPoint;
@@ -222,9 +228,21 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 
 							const Color viewDiffuse = Color( (float)Dot( viewRay.d.Normalize().Reverse(), normal ) );
 
-							Color color = baryPt[ 0 ] * triList[ i ].v0.color;
-							color += baryPt[ 1 ] * triList[ i ].v1.color;
-							color += baryPt[ 2 ] * triList[ i ].v2.color;
+							Color color = Color::Black;
+
+							if( model.material.textured )
+							{
+								const Bitmap* texture = rm.GetImageRef( 0 );
+								const uint32_t texel = texture->GetPixel( uv[ 0 ] * texture->GetWidth(), uv[ 1 ] * texture->GetHeight() );
+								color = texel;
+							}
+							else
+							{
+								color += baryPt[ 0 ] * triCache[ i ].v0.color;
+								color += baryPt[ 1 ] * triCache[ i ].v1.color;
+								color += baryPt[ 2 ] * triCache[ i ].v2.color;
+							}
+					
 							color *= diffuse;
 							color += 0.05f;
 
@@ -243,7 +261,7 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 			else
 #endif
 			{
-				Color color = triList[ i ].v0.color;
+				Color color = triCache[ i ].v0.color;
 				color.rgba().a = 0.1f;
 
 				DrawLine( bitmap, pxPts[ 0 ][ 0 ], pxPts[ 0 ][ 1 ], pxPts[ 1 ][ 0 ], pxPts[ 1 ][ 1 ], color );

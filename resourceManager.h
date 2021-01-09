@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <vector>
 #include "geom.h"
+#include "bitmap.h"
 
 class ResourceManager
 {
@@ -10,7 +11,10 @@ private:
 	std::vector<vertexBuffer_t>	vertexBuffers;
 	std::vector<indexBuffer_t>	indexBuffers;
 	std::vector<Model>			modelBuffer;
+	std::vector<Bitmap>			imageBuffer; // TODO: use image class instead of bitmap
 public:
+
+	static const uint32_t InvalidModelIx = ~0x00;
 
 	uint32_t AllocVB()
 	{
@@ -30,6 +34,12 @@ public:
 		return static_cast<uint32_t>( modelBuffer.size() - 1 );
 	}
 
+	uint32_t StoreImageCopy( const Bitmap& image )
+	{
+		imageBuffer.push_back( image );
+		return static_cast<uint32_t>( imageBuffer.size() - 1 );
+	}
+
 	void AddVertex( const uint32_t vbIx, const vertex_t& vertex )
 	{
 		vertexBuffers[ vbIx ].buffer.push_back( vertex );
@@ -40,12 +50,12 @@ public:
 		indexBuffers[ ibIx ].buffer.push_back( index );
 	}
 
-	uint32_t GetVbOffset( const uint32_t vbIx )
+	uint32_t GetVbOffset( const uint32_t vbIx ) const
 	{
 		return vertexBuffers[ vbIx ].buffer.size();
 	}
 
-	uint32_t GetIbOffset( const uint32_t ibIx )
+	uint32_t GetIbOffset( const uint32_t ibIx ) const
 	{
 		return indexBuffers[ ibIx ].buffer.size();
 	}
@@ -68,7 +78,7 @@ public:
 		return &vb.buffer[ i ];
 	}
 
-	uint32_t GetIndex( const uint32_t ibIx, const uint32_t i )
+	uint32_t GetIndex( const uint32_t ibIx, const uint32_t i ) const
 	{
 		if ( ibIx >= indexBuffers.size() )
 		{
@@ -76,7 +86,7 @@ public:
 			return 0;
 		}
 
-		indexBuffer_t& ib = indexBuffers[ ibIx ];
+		const indexBuffer_t& ib = indexBuffers[ ibIx ];
 		if ( i >= ib.buffer.size() )
 		{
 			assert( false );
@@ -95,5 +105,16 @@ public:
 		}
 
 		return &modelBuffer[ modelIx ];
+	}
+
+	const Bitmap* GetImageRef( const uint32_t imageIx ) const
+	{
+		if ( imageIx >= imageBuffer.size() )
+		{
+			assert( false );
+			return nullptr;
+		}
+
+		return &imageBuffer[ imageIx ];
 	}
 };

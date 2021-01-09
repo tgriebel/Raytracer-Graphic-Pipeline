@@ -16,11 +16,11 @@ Bitmap::Bitmap( const Bitmap& bitmap )
 {
 	h = bitmap.h;
 
-	pixelsNum = bitmap.pixelsNum;
+	pixelCnt = bitmap.pixelCnt;
 
-	mapdata = new Pixel[ pixelsNum ];
+	mapdata = new Pixel[ pixelCnt ];
 
-	for ( uint32_t i = 0; i < pixelsNum; ++i )
+	for ( uint32_t i = 0; i < pixelCnt; ++i )
 	{
 		mapdata[ i ] = bitmap.mapdata[ i ];
 	}
@@ -29,14 +29,14 @@ Bitmap::Bitmap( const Bitmap& bitmap )
 
 Bitmap::Bitmap( const uint32_t width, const uint32_t height, const uint32_t color )
 {
-	pixelsNum = ( width * height );
+	pixelCnt = ( width * height );
 
-	mapdata = new Pixel[ pixelsNum ];
+	mapdata = new Pixel[ pixelCnt ];
 
 	h.magicNum[ 0 ]	= 'B';
 	h.magicNum[ 1 ]	= 'M';
 
-	h.size			= ( pixelsNum * 4 );
+	h.size			= ( pixelCnt * 4 );
 	h.reserve1		= 0;
 	h.reserve2		= 0;
 	h.offset		= 54;
@@ -47,13 +47,13 @@ Bitmap::Bitmap( const uint32_t width, const uint32_t height, const uint32_t colo
 	h.cPlanes		= 1;
 	h.bpPixels		= 32;
 	h.compression	= 0;
-	h.imageSize		= ( h.bpPixels * pixelsNum );
+	h.imageSize		= ( h.bpPixels * pixelCnt );
 	h.hRes			= 0;
 	h.vRes			= 0;
 	h.colors		= 0;
 	h.iColors		= 0;
 
-	for ( size_t i = 0; i < pixelsNum; ++i )
+	for ( size_t i = 0; i < pixelCnt; ++i )
 	{
 		mapdata[ i ].rgba = Color( color ).AsRGBA();
 	}
@@ -138,13 +138,22 @@ void Bitmap::Load( const std::string& filename )
 		padding = 4 - ( h.width % 4 );
 	}
 
+	const uint32_t srcSize = h.imageSize;
+	const uint16_t srcBitDepth = h.bpPixels;
+
+	// Convert to supported format
+	{
+		h.bpPixels = 32;
+		h.compression = 0;
+		h.imageSize = 4 * ( h.width + padding ) * h.height;
+	}
+
 	instream.seekg( h.offset, std::ios_base::beg );
 
-	uint32_t bytes = h.imageSize;
+	pixelCnt = ( h.width + padding ) * h.height;
+	mapdata = new Pixel[ pixelCnt ];
 
-	mapdata = new Pixel[ bytes ];
-
-	const int32_t pixelBytes = ( h.bpPixels / 8 );
+	const int32_t pixelBytes = ( srcBitDepth >> 3 );
 	const int32_t lineBytes = ( pixelBytes * h.width );
 	uint8_t* buffer = new uint8_t[ lineBytes ];
 
@@ -225,19 +234,19 @@ void Bitmap::Write( const std::string& filename )
 }
 
 
-uint32_t Bitmap::GetSize()
+uint32_t Bitmap::GetSize() const
 {
 	return h.imageSize;
 }
 
 
-uint32_t Bitmap::GetWidth()
+uint32_t Bitmap::GetWidth() const
 {
 	return h.width;
 }
 
 
-uint32_t Bitmap::GetHeight()
+uint32_t Bitmap::GetHeight() const
 {
 	return h.height;
 }
@@ -249,12 +258,13 @@ void Bitmap::ClearImage()
 	{
 		mapdata[ i ].r8g8b8a8 = 0;
 	}
+	pixelCnt = 0;
 }
 
 
-void Bitmap::GetBuffer( uint32_t buffer[] )
+void Bitmap::GetBuffer( uint32_t buffer[] ) const
 {
-	for ( uint32_t i = 0; i < pixelsNum; ++i )
+	for ( uint32_t i = 0; i < pixelCnt; ++i )
 	{
 		Pixel pixel;
 		CopyToPixel( mapdata[ i ].rgba, pixel, BITMAP_BGRA );
@@ -278,7 +288,7 @@ bool Bitmap::SetPixel( const int32_t x, const int32_t y, const uint32_t color )
 }
 
 
-uint32_t Bitmap::GetPixel( const int32_t x, const int32_t y )
+uint32_t Bitmap::GetPixel( const int32_t x, const int32_t y ) const
 {
 	if ( ( x >= static_cast<int32_t>( h.width ) ) || ( x < 0 ) || ( y >= static_cast<int32_t>( h.height ) ) || ( y < 0 ) )
 	{

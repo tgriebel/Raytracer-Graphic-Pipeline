@@ -47,7 +47,7 @@ uint32_t LoadModel( const std::string& path, const uint32_t vb, const uint32_t i
 	model->material.Kt = 0.5;
 	model->material.Kd = 0.5;
 	model->material.Ks = 1.0;
-	model->material.Kr = 1.0;
+	model->material.Kr = 0.4;
 
 	return modelIx;
 }
@@ -55,6 +55,12 @@ uint32_t LoadModel( const std::string& path, const uint32_t vb, const uint32_t i
 
 uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_t ib )
 {
+	/////////////////////////////////////////////
+	//                                         //
+	// Load model and clean data			   //
+	//                                         //
+	/////////////////////////////////////////////
+
 	MeshIO::Obj objMesh;
 	MeshIO::ReadObj( path, objMesh );
 
@@ -74,8 +80,9 @@ uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_
 			const int32_t faceCnt = faces.size();
 			for ( int32_t faceIx = 0; faceIx < faceCnt; ++faceIx )
 			{
-				assert( faces[ faceIx ].vertices.size() == 3 );
-				for ( int32_t i = 0; i < 3; ++i )
+				const int32_t vertexCnt = faces[ faceIx ].vertices.size();
+				assert( ( vertexCnt == 3 ) || ( vertexCnt == 4 ) );
+				for ( int32_t i = 0; i < vertexCnt; ++i )
 				{
 					vertex_t vert;
 					const int32_t vertIx = faces[ faceIx ].vertices[ i ].vertexIx;
@@ -119,43 +126,84 @@ uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_
 						indices.push_back( std::distance( uniqueVertices.begin(), it ) );
 					}
 				}
+
+				if( vertexCnt == 4 )
+				{					
+					// For quads do a very simple triangulation by appending the two
+					// adjacent indices to make the second triangle in the quad.
+					// This totals 6 indices, 3 for each triangle
+					// TODO: winding order
+					assert( indices.size() >= 4 );
+					const uint32_t v0 = *( indices.end() - 4 );
+					const uint32_t v2 = *( indices.end() - 2 );
+
+					indices.push_back( v0 );
+					indices.push_back( v2 );
+				}
 			}
 		}
 	}
 
-	uint32_t modelIx = rm.AllocModel();
+	// Normalize UVs to [0, 1]
+	// TODO: leave as-is and let texture wrap mode deal with it?
+	{
+		auto vertEnd = uniqueVertices.end();
+		for( auto it = uniqueVertices.begin(); it != vertEnd; ++it )
+		{
+			it->uv[ 0 ] = ( it->uv[ 0 ] > 1.0 ) ? ( it->uv[ 0 ] - floor( it->uv[ 0 ] ) ) : it->uv[ 0 ];
+			it->uv[ 1 ] = ( it->uv[ 1 ] > 1.0 ) ? ( it->uv[ 1 ] - floor( it->uv[ 1 ] ) ) : it->uv[ 1 ];
+
+			it->uv[ 0 ] = Saturate( it->uv[ 0 ] );
+			it->uv[ 1 ] = Saturate( it->uv[ 1 ] );
+
+			it->uv[ 1 ] = 1.0 - it->uv[ 1 ];
+		}
+	}
+
+	/////////////////////////////////////////////
+	//                                         //
+	// Construct final object representation   //
+	//                                         //
+	/////////////////////////////////////////////
+
+	const uint32_t modelIx = rm.AllocModel();
 	Model* model = rm.GetModel( modelIx );
 
-	model->name = path;
-	model->vb = vb;
-	model->ib = ib;
-	model->vbOffset = rm.GetVbOffset( vb );
-	model->ibOffset = rm.GetIbOffset( ib );
-
-	const uint32_t vertexCnt = uniqueVertices.size();
-	for ( int32_t i = 0; i < vertexCnt; ++i )
+	// Build VB and IB
 	{
-		rm.AddVertex( vb, uniqueVertices[ i ] );
-	}
-	model->vbEnd = rm.GetVbOffset( vb );
+		model->name = path;
+		model->vb = vb;
+		model->ib = ib;
+		model->vbOffset = rm.GetVbOffset( vb );
+		model->ibOffset = rm.GetIbOffset( ib );
 
-	const size_t indexCnt = indices.size();
-	assert( ( indexCnt % 3 ) == 0 );
-	for ( size_t i = 0; i < indexCnt; i += 3 )
+		const uint32_t vertexCnt = uniqueVertices.size();
+		for ( int32_t i = 0; i < vertexCnt; ++i )
+		{
+			rm.AddVertex( vb, uniqueVertices[ i ] );
+		}
+		model->vbEnd = rm.GetVbOffset( vb );
+
+		const size_t indexCnt = indices.size();
+		assert( ( indexCnt % 3 ) == 0 );
+		for ( size_t i = 0; i < indexCnt; i++ )
+		{
+			rm.AddIndex( ib, model->vbOffset + indices[ i ] );
+		}
+		model->ibEnd = rm.GetIbOffset( ib );
+	}
+
+	// Set material
 	{
-		rm.AddIndex( ib, model->vbOffset + indices[ i + 0 ] );
-		rm.AddIndex( ib, model->vbOffset + indices[ i + 1 ] );
-		rm.AddIndex( ib, model->vbOffset + indices[ i + 2 ] );
+		model->material.Ka = 1.0;
+		model->material.Kt = 1.0;
+		model->material.Kd = 1.0;
+		model->material.Ks = 1.0;
+		model->material.Kr = 1.0;
+		model->material.textured = false;
 	}
-	model->ibEnd = rm.GetIbOffset( ib );
 
-	model->material.Ka = 1.0;
-	model->material.Kt = 0.5;
-	model->material.Kd = 0.5;
-	model->material.Ks = 1.0;
-	model->material.Kr = 1.0;
-
-	MeshIO::WriteObj( std::string( "models/teapot-outtest.obj" ), objMesh );
+	// MeshIO::WriteObj( std::string( "models/teapot-outtest.obj" ), objMesh );
 	return modelIx;
 }
 
@@ -218,18 +266,18 @@ void StoreModelObj( const std::string& path, const uint32_t modelIx )
 	group.smoothingGroups[ 0 ] = smoothingGroup;
 	meshObj.groups[ model->name ] = group;
 
-	MeshIO::WriteObj( std::string( "models/teapotout.obj" ), meshObj );
+	MeshIO::WriteObj( path, meshObj );
 }
 
 
-void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance )
+void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const material_t& material )
 {
 	const Model* model = rm.GetModel( modelIx );
 
 	outInstance->transform = modelMatrix;
 	const uint32_t vb = rm.AllocVB();
 	outInstance->modelIx = modelIx;
-	outInstance->triList.reserve( ( model->ibEnd - model->ibOffset ) / 3 );
+	outInstance->triCache.reserve( ( model->ibEnd - model->ibOffset ) / 3 );
 
 	const uint32_t vbOffset = 0;
 
@@ -328,7 +376,7 @@ void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, co
 		v1.normal = vec3d( 0.0, 1.0, 0.0 );
 		v2.normal = vec3d( 0.0, 0.0, 1.0 );
 		*/
-		outInstance->triList.push_back( Triangle( v0, v1, v2 ) );
+		outInstance->triCache.push_back( Triangle( v0, v1, v2 ) );
 	}
 
 	outInstance->material = model->material;
@@ -337,7 +385,7 @@ void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, co
 }
 
 
-uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& size, const vec2i& cellCnt, const material_t& material )
+uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& size, const vec2i& cellCnt )
 {
 	uint32_t modelIx = rm.AllocModel();
 	Model* model = rm.GetModel( modelIx );
@@ -396,7 +444,15 @@ uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& si
 	}
 	model->ibEnd = rm.GetIbOffset( ib );
 
-	model->material = material;
+	// Set material
+	{
+		model->material.Ka = 1.0;
+		model->material.Kt = 1.0;
+		model->material.Kd = 1.0;
+		model->material.Ks = 1.0;
+		model->material.Kr = 1.0;
+		model->material.textured = false;
+	}
 
 	return modelIx;
 }

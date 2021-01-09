@@ -15,6 +15,8 @@ struct material_t
 	double Kd;
 	double Ks;
 	double Kr;
+
+	bool textured;
 };
 
 
@@ -37,7 +39,7 @@ template<typename T1, typename T2>
 inline T1 Lerp( const T1& v0, const T1& v1, T2 t )
 {
 	t = Saturate( t );
-	T1 one = T1( static_cast<T2>( 1.0 ) );
+	T2 one = T2( static_cast<T2>( 1.0 ) );
 	return ( one - t ) * v0 + t * v1;
 }
 
