@@ -23,6 +23,7 @@
 #include "scene.h"
 #include "debug.h"
 #include "globals.h"
+#include "image.h"
 
 ResourceManager	rm;
 
@@ -38,6 +39,8 @@ Bitmap*			depthBuffer;
 
 void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true );
 
+void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap );
+void ImageToBitmap( const Image<float>& image, Bitmap& bitmap );
 
 sample_t RecordSkyInfo( const Ray& r, const double t )
 {
@@ -314,7 +317,7 @@ SceneView SetupSideView()
 
 
 
-void DrawScene( Bitmap& bitmap )
+void DrawScene( Image<Color>& bitmap )
 {
 	views[ VIEW_CAMERA ] = SetupCameraView();
 	views[ VIEW_TOP ] = SetupTopView();
@@ -436,7 +439,7 @@ void BuildScene()
 
 	modelIx = LoadModelObj( std::string( "models/teapot.obj" ), vb, ib );
 	{
-		StoreModelObj( std::string( "models/teapot-outtest.obj" ), modelIx );
+	//	StoreModelObj( std::string( "models/teapot-outtest.obj" ), modelIx );
 	}
 
 	if ( modelIx >= 0 )
@@ -531,16 +534,16 @@ void BuildScene()
 }
 
 
-void DrawGradientImage( Bitmap& bitmap, const Color& color0, const Color& color1, const float power = 1.0f )
+void DrawGradientImage( Image<Color>& image, const Color& color0, const Color& color1, const float power = 1.0f )
 {
-	for ( uint32_t j = 0; j < bitmap.GetHeight(); ++j )
+	for ( uint32_t j = 0; j < image.GetHeight(); ++j )
 	{
-		const float t = pow( j / static_cast<float>( bitmap.GetHeight() ), power );
+		const float t = pow( j / static_cast<float>( image.GetHeight() ), power );
 
 		const uint32_t gradient = LinearToSrgb( Lerp( color0, color1, t ) ).AsR8G8B8A8();
-		for ( uint32_t i = 0; i < bitmap.GetWidth(); ++i )
+		for ( uint32_t i = 0; i < image.GetWidth(); ++i )
 		{
-			bitmap.SetPixel( i, j, gradient );
+			image.SetPixel( i, j, gradient );
 		}
 	}
 }
@@ -573,20 +576,23 @@ int main(void)
 	Bitmap db = Bitmap( RenderWidth, RenderHeight, Color::Black );
 	depthBuffer = &db;
 
-	Bitmap image = Bitmap( RenderWidth, RenderHeight, Color::DGrey );
-	DrawGradientImage( image, Color::Blue, Color::Red, 0.8f );
+	Image<Color> frameBuffer = Image<Color>( RenderWidth, RenderHeight, Color::DGrey, "_frameBuffer" );
+	DrawGradientImage( frameBuffer, Color::Blue, Color::Red, 0.8f );
 
 	const int32_t imageCnt = 1;
 	for ( int32_t i = 0; i < imageCnt; ++i )
 	{
-		DrawScene( image );
+		DrawScene( frameBuffer );
 
 		std::stringstream ss;
 
 #if USE_RAYTRACE
 		ss << "output/out" << i << ".bmp";
 
-		image.Write( ss.str() );
+		Bitmap outImage = Bitmap( RenderWidth, RenderHeight );
+		ImageToBitmap( frameBuffer, outImage );
+
+		outImage.Write( ss.str() );
 		std::cout << ss.str() << std::endl;
 
 		std::stringstream dbgDiffuse;

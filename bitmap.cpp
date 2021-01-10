@@ -252,13 +252,12 @@ uint32_t Bitmap::GetHeight() const
 }
 
 
-void Bitmap::ClearImage()
+void Bitmap::ClearImage( const uint32_t color )
 {
-	for ( uint32_t i = 0; i < h.imageSize; ++i )
+	for ( uint32_t i = 0; i < pixelCnt; ++i )
 	{
-		mapdata[ i ].r8g8b8a8 = 0;
+		mapdata[ i ].r8g8b8a8 = color;
 	}
-	pixelCnt = 0;
 }
 
 

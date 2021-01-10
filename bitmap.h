@@ -43,7 +43,7 @@ public:
 	uint32_t GetWidth() const;
 	uint32_t GetHeight() const;
 
-	void ClearImage();
+	void ClearImage( const uint32_t color = 0xFF );
 
 	void GetBuffer( uint32_t buffer[] ) const;
 

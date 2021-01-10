@@ -8,11 +8,7 @@
 #include "resourceManager.h"
 
 static Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
-
-//
-#include <map>
-static std::map<float,float> zBufferValuesDbg;
-//
+static Image<float> hiZ( static_cast<uint32_t>( 0.25 * RenderWidth ), static_cast<uint32_t>( 0.25 * RenderHeight ), 1.0f, "_hiZ" );
 
 extern Scene scene;
 extern Bitmap* depthBuffer;
@@ -20,6 +16,59 @@ extern ResourceManager rm;
 
 void OrthoMatrixToAxis( const mat4x4d& m, vec3d& origin, vec3d& xAxis, vec3d& yAxis, vec3d& zAxis );
 void DrawWorldAxis( Bitmap& bitmap, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z );
+
+void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap )
+{
+	bitmap.ClearImage( Color::Black );
+
+	const uint32_t width = std::min( image.GetWidth(), bitmap.GetWidth() );
+	const uint32_t height = std::min( image.GetHeight(), bitmap.GetHeight() );
+
+	for ( int32_t y = 0; y < height; ++y )
+	{
+		for ( int32_t x = 0; x < width; ++x )
+		{
+			Color color = image.GetPixel( x, y );
+			bitmap.SetPixel( x, y, color.AsR8G8B8A8() );
+		}
+	}
+}
+
+
+void ImageToBitmap( const Image<float>& image, Bitmap& bitmap )
+{
+	bitmap.ClearImage( Color::Black );
+
+	const uint32_t srcWidth = image.GetWidth();
+	const uint32_t srcHeight = image.GetHeight();
+
+	const uint32_t width = std::min( srcWidth, bitmap.GetWidth() );
+	const uint32_t height = std::min( srcHeight, bitmap.GetHeight() );
+
+	float minZ = FLT_MAX;
+	float maxZ = -FLT_MAX;
+	for ( int32_t y = 0; y < srcHeight; ++y )
+	{
+		for ( int32_t x = 0; x < srcWidth; ++x )
+		{
+			const float zValue = image.GetPixel( x, y );
+			minZ = std::min( minZ, zValue );
+			maxZ = std::max( maxZ, zValue );
+		}
+	}
+
+	for ( int32_t y = 0; y < height; ++y )
+	{
+		for ( int32_t x = 0; x < width; ++x )
+		{
+			const float value = image.GetPixel( x, y );
+			const float packed = ( value - minZ ) / ( maxZ - minZ );
+
+			const Color c = Color( packed );
+			bitmap.SetPixel( x, y, c.AsR8G8B8A8() );
+		}
+	}
+}
 
 void DrawCube( Bitmap& bitmap, const SceneView& view, const vec4d& minCorner, const vec4d& maxCorner )
 {
@@ -218,7 +267,7 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 							uv += baryPt[ 1 ] * triCache[ i ].v1.uv;
 							uv += baryPt[ 2 ] * triCache[ i ].v2.uv;
 
-							//vec3d normal = triList[ i ].v0.normal.Normalize();
+							// normal = triCache[ i ].n;
 
 							vec3d lightDir = scene.lights[ 0 ].pos - wsPoint;
 							lightDir = lightDir.Normalize();
@@ -247,11 +296,10 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 							color += 0.05f;
 
 							const Color normalColor = Color( 0.5f * normal[ 0 ] + 0.5f, 0.5f * normal[ 1 ] + 0.5f, 0.5f * normal[ 2 ] + 0.5f );
-							//const Color normalColor = Color( normal[ 0 ], normal[ 1 ], normal[ 2 ] );
 
 							if ( depth < zBuffer.GetPixel( x, y ) )
 							{
-								bitmap.SetPixel( x, y, LinearToSrgb( color ).AsR8G8B8A8() );
+								bitmap.SetPixel( x, y, LinearToSrgb( normalColor ).AsR8G8B8A8() );
 								zBuffer.SetPixel( x, y, depth );
 							}
 						}
@@ -290,29 +338,5 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 		}
 	}
 
-	float minZ = FLT_MAX;
-	float maxZ = -FLT_MAX;
-	for ( int32_t y = 0; y < RenderHeight; ++y )
-	{
-		for ( int32_t x = 0; x < RenderWidth; ++x )
-		{
-			const float zValue = zBuffer.GetPixel( x, y );
-
-			minZ = std::min( minZ, zValue );
-			maxZ = std::max( maxZ, zValue );
-		}
-	}
-
-	for ( int32_t y = 0; y < RenderHeight; ++y )
-	{
-		for ( int32_t x = 0; x < RenderWidth; ++x )
-		{
-			const float zValue = zBuffer.GetPixel( x, y );
-			const float packedZ = ( zValue - minZ ) / ( maxZ - minZ );
-			zBufferValuesDbg[ zValue ] = packedZ;
-
-			const Color c = Color( packedZ );
-			depthBuffer->SetPixel( x, y, c.AsR8G8B8A8() );
-		}
-	}
+	ImageToBitmap( zBuffer, *depthBuffer );
 }

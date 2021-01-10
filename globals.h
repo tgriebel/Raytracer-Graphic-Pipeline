@@ -9,7 +9,7 @@
 #define USE_AABB		1
 #define USE_RELFECTION	1
 #define USE_SHADOWS		1
-#define USE_RAYTRACE	0
+#define USE_RAYTRACE	1
 #define USE_SS4X		0
 #define USE_RASTERIZE	1
 #define DRAW_WIREFRAME	1

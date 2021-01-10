@@ -51,7 +51,9 @@ public:
 
 	bool SetPixel( const int32_t x, const int32_t y, const T& pixel )
 	{
-		if ( ( x >= static_cast<int32_t>( width ) ) || ( x < 0 ) || ( y >= static_cast<int32_t>( height ) ) || ( y < 0 ) )
+		if ( ( x >= static_cast<int32_t>( width ) ) || ( x < 0 ) )
+		
+		if ( ( y >= static_cast<int32_t>( height ) ) || ( y < 0 ) )
 			return false;
 
 		const uint32_t index = ( x + y * width );
@@ -64,16 +66,19 @@ public:
 		return true;
 	}
 
-	T GetPixel( const int32_t x, const int32_t y )
+	T GetPixel( const int32_t x, const int32_t y ) const
 	{
-		if ( ( x >= static_cast<int32_t>( width ) ) || ( x < 0 ) || ( y >= static_cast<int32_t>( height ) ) || ( y < 0 ) )
-			return static_cast<T>( 0 );
+		if ( ( x >= static_cast<int32_t>( width ) ) || ( x < 0 ) )
+			return T();
+		
+		if ( ( y >= static_cast<int32_t>( height ) ) || ( y < 0 ) )
+			return T();
 
 		const uint32_t index = ( x + y * width );
 		assert( index < length );
 
 		if ( index >= length )
-			return static_cast<T>( 0 );
+			return T();
 
 		return buffer[ index ];
 	}
