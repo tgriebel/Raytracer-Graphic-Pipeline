@@ -379,7 +379,7 @@ void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, co
 		outInstance->triCache.push_back( Triangle( v0, v1, v2 ) );
 	}
 
-	outInstance->material = model->material;
+	outInstance->material = material;
 
 	outInstance->ComputeAABB();
 }

@@ -9,10 +9,10 @@
 #define USE_AABB		1
 #define USE_RELFECTION	1
 #define USE_SHADOWS		1
-#define USE_RAYTRACE	1
+#define USE_RAYTRACE	0
 #define USE_SS4X		0
-#define USE_RASTERIZE	0
-#define DRAW_WIREFRAME	0
+#define USE_RASTERIZE	1
+#define DRAW_WIREFRAME	1
 #define	DRAW_AABB		1
 #define PHONG_NORMALS	1
 // TODO: winding order support
@@ -20,7 +20,7 @@
 #if 0
 static const uint32_t	RenderWidth			= 1920;
 static const uint32_t	RenderHeight		= 1080;
-#elif 1
+#elif 0
 static const uint32_t	RenderWidth			= 720;
 static const uint32_t	RenderHeight		= 480;
 #elif 1
@@ -35,10 +35,10 @@ static const double		CameraNearPlane		= 0.1f;
 static const double		CameraFarPlane		= 1000.0f;
 static const vec2i		RenderSize			= vec2i( RenderWidth, RenderHeight );
 
-static const float		AmbientLight		= 0.2f;
+static const float		AmbientLight		= 0.1f;
 static const double		SpecularPower		= 15.0;
 static const double		MaxT				= 1000.0;
-static const uint32_t	MaxBounces			= 1;
+static const uint32_t	MaxBounces			= 3;
 
 enum axisMode_t : uint32_t
 {

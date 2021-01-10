@@ -79,9 +79,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="models\teapotout.obj">
-      <Filter>Resource Files</Filter>
-    </Resource>
     <Resource Include="models\teapot.obj">
       <Filter>Resource Files</Filter>
     </Resource>
@@ -106,5 +103,16 @@
     <Resource Include="models\sphere3.obj">
       <Filter>Resource Files</Filter>
     </Resource>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="models\12140_Skull_v3_L2.obj">
+      <Filter>Resource Files</Filter>
+    </Object>
+    <Object Include="models\sphere-outtest.obj">
+      <Filter>Resource Files</Filter>
+    </Object>
+    <Object Include="models\teapot-outtest.obj">
+      <Filter>Resource Files</Filter>
+    </Object>
   </ItemGroup>
 </Project>

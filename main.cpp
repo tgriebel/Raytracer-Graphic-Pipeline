@@ -26,7 +26,7 @@
 
 ResourceManager	rm;
 
-material_t mirrorMaterial = { 1.0, 1.0, 0.0, 1.0, 1.0, false };
+material_t mirrorMaterial = { 0.3, 1.0, 0.0, 1.0, 1.0, false };
 material_t diffuseMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, true };
 material_t colorMaterial = { 1.0, 1.0, 1.0, 1.0, 0.1, false };
 
@@ -202,6 +202,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 #endif
 
 			Color shadingColor = Color::Black;
+			Color relfectionColor = Color::Black;
 
 			if ( !lightOccluded )
 			{
@@ -216,30 +217,30 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 
 				const double specularIntensity = material.Ks * pow( std::max( 0.0, Dot( surfaceSample.normal, halfVector ) ), SpecularPower );
 
+#if USE_RELFECTION
+				if ( ( rayDepth < MaxBounces ) && ( material.Kr > 0.0 ) )
+				{
+					const vec3d reflectVector = 2.0 * Dot( viewVector, surfaceSample.normal ) * surfaceSample.normal - viewVector;
+
+					Ray reflectionRay = Ray( surfaceSample.pt, surfaceSample.pt + reflectVector );
+
+					reflectionRay.maxt = DBL_MAX;//std::max( 0.0, reflectionVector.t - reflectionVector.mint );
+
+					const sample_t reflectSample = RayTrace_r( reflectionRay, rayDepth + 1 );
+					relfectionColor = material.Kr * reflectSample.color;
+				}
+#endif
+
 				shadingColor = ( (float) diffuseIntensity * surfaceColor ) + Color( (float) specularIntensity );
 			}
 
-			finalColor += shadingColor;
+			finalColor += shadingColor + relfectionColor;
 		}
 
-		Color relfectionColor = Color::Black;
-#if USE_RELFECTION
-		if ( rayDepth < MaxBounces )
-		{
-			const vec3d reflectVector = 2.0 * Dot( viewVector, surfaceSample.normal ) * surfaceSample.normal - viewVector;
-
-			Ray reflectionRay = Ray( surfaceSample.pt, surfaceSample.pt + reflectVector );
-
-			reflectionRay.maxt = DBL_MAX;//std::max( 0.0, reflectionVector.t - reflectionVector.mint );
-
-			const sample_t reflectSample = RayTrace_r( reflectionRay, rayDepth + 1 );
-			relfectionColor = material.Kr * reflectSample.color;
-		}
-#endif
 		const Color ambient = AmbientLight * ( (float) material.Ka * surfaceColor );
 
 		sample = surfaceSample;
-		sample.color = finalColor + relfectionColor + ambient;
+		sample.color = finalColor + ambient;
 		return sample;
 	}
 
@@ -434,6 +435,10 @@ void BuildScene()
 	uint32_t ib = rm.AllocIB();
 
 	modelIx = LoadModelObj( std::string( "models/teapot.obj" ), vb, ib );
+	{
+		StoreModelObj( std::string( "models/teapot-outtest.obj" ), modelIx );
+	}
+
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
@@ -451,25 +456,22 @@ void BuildScene()
 	}
 
 	modelIx = LoadModelObj( std::string( "models/sphere.obj" ), vb, ib );
-	{
-	//	StoreModelObj( std::string( "models/sphere-outtest.obj" ), modelIx );
-	}
-
 	if( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
 
 		ModelInstance sphere0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 40.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.8, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Red, &sphere0, mirrorMaterial );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::White, &sphere0, mirrorMaterial );
 		scene.models.push_back( sphere0 );
 
 		ModelInstance sphere1;
 		modelMatrix = BuildModelMatrix( vec3d( -50.0, -10.0, 10.0 ), vec3d( 0.0, 0.0, 0.0 ), .3, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Blue, &sphere1, colorMaterial );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Red, &sphere1, colorMaterial );
 		scene.models.push_back( sphere1 );
 	}
 
+	/*
 	modelIx = LoadModelObj( std::string( "models/12140_Skull_v3_L2.obj" ), vb, ib );
 	if ( modelIx >= 0 )
 	{
@@ -482,6 +484,7 @@ void BuildScene()
 		scene.models.push_back( skull );
 		
 	}
+	*/
 
 	modelIx = CreatePlaneModel( vb, ib, vec2d( 500.0 ), vec2i( 1 ) );
 	if ( modelIx >= 0 )
