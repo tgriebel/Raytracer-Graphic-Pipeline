@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "geom.h"
+#include "ray.h"
 
 enum octreeRegion_t : uint8_t
 {
@@ -62,6 +63,31 @@ public:
 			if( !inChildNode )
 			{
 				items.push_back( item );
+			}
+
+			return true;
+		}
+		return false;
+	}
+
+	// TODO: move out of tree
+	bool Intersect( const Ray& ray, std::vector<T>& hitItems ) const
+	{
+		double tNear;
+		double tFar;
+
+		if ( aabb.Intersect( ray, tNear, tFar ) )
+		{
+			const uint32_t childCnt = children.size();
+			for ( uint32_t i = 0; i < childCnt; ++i )
+			{
+				children[ i ].Intersect( ray, hitItems );
+			}
+
+			const uint32_t itemCnt = items.size();
+			for ( uint32_t itemIx = 0; itemIx < itemCnt; ++itemIx )
+			{
+				hitItems.push_back( items[ itemIx ] );
 			}
 
 			return true;

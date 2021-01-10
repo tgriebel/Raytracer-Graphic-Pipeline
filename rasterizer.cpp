@@ -354,7 +354,7 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 		}
 	}
 	
-	DrawOctree( image, view, scene.models[ 0 ].octree, Color::Red );
+	// DrawOctree( image, view, scene.models[ 0 ].octree, Color::Red );
 
 	depthBuffer = zBuffer;
 }

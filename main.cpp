@@ -130,13 +130,20 @@ bool IntersectScene( const Ray& ray, const bool cullBackfaces, const bool stopAt
 #endif
 
 		const std::vector<Triangle>& triCache = model.triCache;
+		std::vector<uint32_t> triIndices;
+		model.octree.Intersect( ray, triIndices );
 
-		const size_t triCnt = triCache.size();
-		for ( size_t triIx = 0; triIx < triCnt; ++triIx )
+		//const size_t triCnt = triCache.size();
+		const size_t triCnt = triIndices.size();
+		for ( size_t ix = 0; ix < triCnt; ++ix )
 		{
+			const uint32_t triIx = triIndices[ ix ];
+			// const uint32_t triIx = ix;
+			const Triangle& tri = triCache[ triIx ];
+
 			double t;
 			bool isBackface;
-			if( RayToTriangleIntersection( ray, triCache[ triIx ], isBackface, t ) )
+			if( RayToTriangleIntersection( ray, tri, isBackface, t ) )
 			{
 				if ( t > outSample.t )
 					continue;
@@ -445,12 +452,12 @@ void BuildScene()
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
-		
+		/*
 		ModelInstance teapot0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 10.0 ), vec3d( 0.0, 0.0, -90.0 ), 1.0, RHS_XZY );
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Yellow, &teapot0, colorMaterial );
 		scene.models.push_back( teapot0 );
-		/*
+		
 		ModelInstance teapot1;
 		modelMatrix = BuildModelMatrix( vec3d( -30.0, -50.0, 10.0 ), vec3d( 0.0, 0.0, 30.0 ), 1.0, RHS_XZY );
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Green, &teapot1, colorMaterial );
@@ -474,19 +481,21 @@ void BuildScene()
 		scene.models.push_back( sphere1 );
 	}
 
-	/*
 	modelIx = LoadModelObj( std::string( "models/12140_Skull_v3_L2.obj" ), vb, ib );
 	if ( modelIx >= 0 )
 	{
-		
 		mat4x4d modelMatrix;
 
-		ModelInstance skull;
+		ModelInstance skull0;
+		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 10.0 ), vec3d( 0.0, 90.0, 40.0 ), 4.0, RHS_XZY );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull0, mirrorMaterial );
+		scene.models.push_back( skull0 );
+
+		ModelInstance skull1;
 		modelMatrix = BuildModelMatrix( vec3d( -30.0, -120.0, -10.0 ), vec3d( 0.0, 90.0, 0.0 ), 5.0, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull, diffuseMaterial );
-		scene.models.push_back( skull );		
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull1, diffuseMaterial );
+		scene.models.push_back( skull1 );		
 	}
-	*/
 
 	modelIx = CreatePlaneModel( vb, ib, vec2d( 500.0 ), vec2i( 1 ) );
 	if ( modelIx >= 0 )
@@ -515,16 +524,6 @@ void BuildScene()
 		scene.lights.push_back( l );
 		*/
 	}
-	/*
-	const size_t modelCnt = scene.models.size();
-	for ( size_t m = 0; m < modelCnt; ++m )
-	{
-		ModelInstance& model = scene.models[ m ];
-		model.BuildAS();
-		scene.aabb.Expand( model.aabb.min );
-		scene.aabb.Expand( model.aabb.max );
-	}
-	*/
 
 	// Textures
 	{
