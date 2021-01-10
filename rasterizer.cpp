@@ -6,6 +6,7 @@
 #include "globals.h"
 #include "image.h"
 #include "resourceManager.h"
+#include "octree.h"
 
 static Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
 static Image<float> hiZ( static_cast<uint32_t>( 0.25 * RenderWidth ), static_cast<uint32_t>( 0.25 * RenderHeight ), 1.0f, "_hiZ" );
@@ -71,7 +72,7 @@ void ImageToBitmap( const Image<float>& image, Bitmap& bitmap )
 }
 
 
-void DrawCube( Image<Color>& image, const SceneView& view, const vec4d& minCorner, const vec4d& maxCorner )
+void DrawCube( Image<Color>& image, const SceneView& view, const vec4d& minCorner, const vec4d& maxCorner, Color color = Color::Green )
 {
 	vec4d corners[ 8 ] = {
 		// Bottom
@@ -117,7 +118,7 @@ void DrawCube( Image<Color>& image, const SceneView& view, const vec4d& minCorne
 	{
 		vec2i  pt0 = ssPts[ edges[ i ][ 0 ] ];
 		vec2i  pt1 = ssPts[ edges[ i ][ 1 ] ];
-		Color color = Color::Green;
+
 		color.a() = 0.4f;
 		DrawLine( image, pt0[ 0 ], pt0[ 1 ], pt1[ 0 ], pt1[ 1 ], color );
 	}
@@ -187,6 +188,20 @@ void DrawRay( Image<Color>& image, const SceneView& view, const Ray& ray, const 
 	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), wsPt[ 0 ], ssPt[ 0 ] );
 	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), wsPt[ 1 ], ssPt[ 1 ] );
 	DrawLine( image, (int)ssPt[ 0 ][ 0 ], (int)ssPt[ 0 ][ 1 ], (int)ssPt[ 1 ][ 0 ], (int)ssPt[ 1 ][ 1 ], color.AsR8G8B8A8() );
+}
+
+
+template<typename T>
+void DrawOctree( Image<Color>& image, const SceneView& view, const Octree<T>& octree, const Color& color )
+{
+	AABB bounds = octree.GetAABB();
+	DrawCube( image, view, vec4d( bounds.min, 1.0 ), vec4d( bounds.max, 1.0 ), color );
+
+	auto nodeEnd = octree.children.end();
+	for ( auto node = octree.children.begin(); node != nodeEnd; ++node )
+	{
+		DrawOctree( image, view, *node, color );
+	}
 }
 
 
@@ -338,6 +353,8 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 			DrawWorldAxis( image, view, 20.0, origin, xAxis, yAxis, zAxis );
 		}
 	}
+	
+	DrawOctree( image, view, scene.models[ 0 ].octree, Color::Red );
 
 	depthBuffer = zBuffer;
 }

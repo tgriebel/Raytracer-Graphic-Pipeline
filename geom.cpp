@@ -381,7 +381,7 @@ void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, co
 
 	outInstance->material = material;
 
-	outInstance->ComputeAABB();
+	outInstance->BuildAS();
 }
 
 

@@ -77,6 +77,15 @@
     <ClInclude Include="image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="octree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="aabb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="models\teapot.obj">

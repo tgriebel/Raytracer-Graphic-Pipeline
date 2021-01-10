@@ -515,15 +515,16 @@ void BuildScene()
 		scene.lights.push_back( l );
 		*/
 	}
-
+	/*
 	const size_t modelCnt = scene.models.size();
 	for ( size_t m = 0; m < modelCnt; ++m )
 	{
 		ModelInstance& model = scene.models[ m ];
-		model.ComputeAABB();
+		model.BuildAS();
 		scene.aabb.Expand( model.aabb.min );
 		scene.aabb.Expand( model.aabb.max );
 	}
+	*/
 
 	// Textures
 	{
