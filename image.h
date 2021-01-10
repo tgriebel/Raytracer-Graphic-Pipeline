@@ -66,6 +66,7 @@ public:
 	bool SetPixel( const int32_t x, const int32_t y, const T& pixel )
 	{
 		if ( ( x >= static_cast<int32_t>( width ) ) || ( x < 0 ) )
+			return false;
 		
 		if ( ( y >= static_cast<int32_t>( height ) ) || ( y < 0 ) )
 			return false;

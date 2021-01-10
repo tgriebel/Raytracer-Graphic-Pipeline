@@ -484,8 +484,7 @@ void BuildScene()
 		ModelInstance skull;
 		modelMatrix = BuildModelMatrix( vec3d( -30.0, -120.0, -10.0 ), vec3d( 0.0, 90.0, 0.0 ), 5.0, RHS_XZY );
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull, diffuseMaterial );
-		scene.models.push_back( skull );
-		
+		scene.models.push_back( skull );		
 	}
 	*/
 

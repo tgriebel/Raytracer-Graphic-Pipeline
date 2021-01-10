@@ -8,7 +8,7 @@
 #include "image.h"
 
 #define USE_AABB		1
-#define USE_RELFECTION	1
+#define USE_RELFECTION	0
 #define USE_SHADOWS		1
 #define USE_RAYTRACE	1
 #define USE_SS4X		0
