@@ -1,5 +1,6 @@
 #pragma once
 
+#include "image.h"
 
 /*
 ===================================
@@ -29,7 +30,7 @@ DrawLine
 - Optimized bresenham algorithm
 ===================================
 */
-inline void DrawLine( Bitmap& bitmap, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Color& color, blendMode_t blendMode = blendMode_t::SRCALPHA )
+inline void DrawLine( Image<Color>& bitmap, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Color& color, blendMode_t blendMode = blendMode_t::SRCALPHA )
 {
 	const int dx = abs( x1 - x0 );
 	const int dy = abs( y1 - y0 );

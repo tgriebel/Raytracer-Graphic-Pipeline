@@ -34,10 +34,10 @@ material_t colorMaterial = { 1.0, 1.0, 1.0, 1.0, 0.1, false };
 Scene			scene;
 SceneView		views[4];
 debug_t			dbg;
-Bitmap*			colorBuffer;
-Bitmap*			depthBuffer;
+Image<Color>	colorBuffer;
+Image<float>	depthBuffer;
 
-void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true );
+void RasterScene( Image<Color>& bitmap, const SceneView& view, bool wireFrame = true );
 
 void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap );
 void ImageToBitmap( const Image<float>& image, Bitmap& bitmap );
@@ -376,8 +376,8 @@ void DrawScene( Image<Color>& bitmap )
 
 				// normal = normal.Reverse();
 				Color normColor = Vec4dToColor( vec4d( 0.5 * normal + vec3d( 0.5 ), 1.0 ) );
-				dbg.diffuse->SetPixel( imageX, imageY, Color( (float)-diffuse ).AsR8G8B8A8() );
-				dbg.normal->SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
+				dbg.diffuse.SetPixel( imageX, imageY, Color( (float)-diffuse ).AsR8G8B8A8() );
+				dbg.normal.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
 
 				Color dest = Color( bitmap.GetPixel( imageX, imageY ) );
 
@@ -389,10 +389,10 @@ void DrawScene( Image<Color>& bitmap )
 	}
 #endif
 
-	RasterScene( *colorBuffer, views[ VIEW_CAMERA ], false );
-	RasterScene( *dbg.wireframe, views[ VIEW_CAMERA ] );
-	RasterScene( *dbg.topWire, views[ VIEW_TOP ] );
-	RasterScene( *dbg.sideWire, views[ VIEW_SIDE ] );
+	RasterScene( colorBuffer, views[ VIEW_CAMERA ], false );
+	RasterScene( dbg.wireframe, views[ VIEW_CAMERA ] );
+	RasterScene( dbg.topWire, views[ VIEW_TOP ] );
+	RasterScene( dbg.sideWire, views[ VIEW_SIDE ] );
 }
 
 
@@ -548,6 +548,35 @@ void DrawGradientImage( Image<Color>& image, const Color& color0, const Color& c
 	}
 }
 
+template<typename T>
+void WriteImage( const Image<T>& image, const std::string& path, const int32_t number = -1 )
+{
+	std::stringstream ss;
+
+	ss << path << "/";
+	
+	const char* name = image.GetName();
+	if( ( name == nullptr ) || ( name == "" ) )
+	{
+		ss << reinterpret_cast<uint64_t>( &image );
+	}
+	else
+	{
+		ss << name;
+	}
+	
+	if( number >= 0 )
+	{
+		ss << "_" << number;
+	}
+
+	ss << ".bmp";
+
+	Bitmap bitmap = Bitmap( image.GetWidth(), image.GetHeight() );
+	ImageToBitmap( image, bitmap );
+	bitmap.Write( ss.str() );
+}
+
 
 int main(void)
 {
@@ -555,26 +584,14 @@ int main(void)
 
 	BuildScene();
 
-	Bitmap diffuse = Bitmap( RenderWidth, RenderHeight, Color::Red );
-	dbg.diffuse = &diffuse;
+	dbg.diffuse = Image<Color>( RenderWidth, RenderHeight, Color::Red, "dbgDiffuse" );
+	dbg.normal = Image<Color>( RenderWidth, RenderHeight, Color::White, "dbgNormal" );
+	dbg.wireframe = Image<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgWireframe" );
+	dbg.topWire = Image<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgTopWire" );
+	dbg.sideWire = Image<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgSideWire" );
 
-	Bitmap normal = Bitmap( RenderWidth, RenderHeight, Color::White );
-	dbg.normal = &normal;
-
-	Bitmap wireframe = Bitmap( RenderWidth, RenderHeight, Color::LGrey );
-	dbg.wireframe = &wireframe;
-
-	Bitmap topWireframe = Bitmap( RenderWidth, RenderHeight, Color::LGrey );
-	dbg.topWire = &topWireframe;
-
-	Bitmap sizeWireframe = Bitmap( RenderWidth, RenderHeight, Color::LGrey );
-	dbg.sideWire = &sizeWireframe;
-
-	Bitmap cb = Bitmap( RenderWidth, RenderHeight, Color::Black );
-	colorBuffer = &cb;
-
-	Bitmap db = Bitmap( RenderWidth, RenderHeight, Color::Black );
-	depthBuffer = &db;
+	colorBuffer = Image<Color>( RenderWidth, RenderHeight, Color::Black, "colorBuffer" );
+	depthBuffer = Image<float>( RenderWidth, RenderHeight, 0.0f, "depthBuffer" );
 
 	Image<Color> frameBuffer = Image<Color>( RenderWidth, RenderHeight, Color::DGrey, "_frameBuffer" );
 	DrawGradientImage( frameBuffer, Color::Blue, Color::Red, 0.8f );
@@ -584,46 +601,18 @@ int main(void)
 	{
 		DrawScene( frameBuffer );
 
-		std::stringstream ss;
-
-#if USE_RAYTRACE
-		ss << "output/out" << i << ".bmp";
-
-		Bitmap outImage = Bitmap( RenderWidth, RenderHeight );
-		ImageToBitmap( frameBuffer, outImage );
-
-		outImage.Write( ss.str() );
-		std::cout << ss.str() << std::endl;
-
-		std::stringstream dbgDiffuse;
-		dbgDiffuse << "output/dbgDiffuse" << i << ".bmp";
-		dbg.diffuse->Write( dbgDiffuse.str() );
-
-		std::stringstream dbgNormal;
-		dbgNormal << "output/dbgNormal" << i << ".bmp";
-		dbg.normal->Write( dbgNormal.str() );
-#endif
-
-		std::stringstream colorBufferName;
-		colorBufferName << "output/colorBuffer" << i << ".bmp";
-		colorBuffer->Write( colorBufferName.str() );
-
-		std::stringstream depthBufferName;
-		depthBufferName << "output/depthBuffer" << i << ".bmp";
-		depthBuffer->Write( depthBufferName.str() );
-
-		std::stringstream dbgWireframe;
-		dbgWireframe << "output/dbgWireframe" << i << ".bmp";
-		dbg.wireframe->Write( dbgWireframe.str() );
-
-		std::stringstream dbgTopWireframe;
-		dbgTopWireframe << "output/dbgTop" << i << ".bmp";
-		dbg.topWire->Write( dbgTopWireframe.str() );
-
-		std::stringstream dbgSideWireframe;
-		dbgSideWireframe << "output/dbgSide" << i << ".bmp";
-		dbg.sideWire->Write( dbgSideWireframe.str() );
+		WriteImage( frameBuffer, "output", i );
 	}
+
+	WriteImage( dbg.diffuse, "output" );
+	WriteImage( dbg.normal, "output" );
+
+	WriteImage( colorBuffer, "output" );
+	WriteImage( depthBuffer, "output" );
+
+	WriteImage( dbg.wireframe, "output" );
+	WriteImage( dbg.topWire, "output" );
+	WriteImage( dbg.sideWire, "output" );
 
 	std::cout << "Raytrace Finished." << std::endl;
 	return 1;

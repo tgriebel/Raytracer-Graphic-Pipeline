@@ -8,9 +8,13 @@ class Image
 {
 public:
 
-	Image() : ~Image()
+	Image()
 	{
-		
+		width = 0;
+		height = 0;
+		length = 0;
+		buffer = nullptr;
+		name = "";
 	}
 
 	Image( const uint32_t _width, const uint32_t _height, const T _default = static_cast<T>( 0.0 ), const char* _name = "" )
@@ -36,6 +40,9 @@ public:
 
 	Image& operator=( const Image& _image )
 	{
+		delete[] buffer;
+		buffer = new T[ _image.length ];
+
 		for ( uint32_t i = 0; i < _image.length; ++i )
 		{
 			buffer[ i ] = _image.buffer[ i ];

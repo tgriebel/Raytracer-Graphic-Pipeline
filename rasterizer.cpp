@@ -11,7 +11,7 @@ static Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
 static Image<float> hiZ( static_cast<uint32_t>( 0.25 * RenderWidth ), static_cast<uint32_t>( 0.25 * RenderHeight ), 1.0f, "_hiZ" );
 
 extern Scene scene;
-extern Bitmap* depthBuffer;
+extern Image<float> depthBuffer;
 extern ResourceManager rm;
 
 void OrthoMatrixToAxis( const mat4x4d& m, vec3d& origin, vec3d& xAxis, vec3d& yAxis, vec3d& zAxis );
@@ -70,7 +70,7 @@ void ImageToBitmap( const Image<float>& image, Bitmap& bitmap )
 	}
 }
 
-void DrawCube( Bitmap& bitmap, const SceneView& view, const vec4d& minCorner, const vec4d& maxCorner )
+void DrawCube( Image<Color>& bitmap, const SceneView& view, const vec4d& minCorner, const vec4d& maxCorner )
 {
 	vec4d corners[ 8 ] = {
 		// Bottom
@@ -128,7 +128,7 @@ void DrawCube( Bitmap& bitmap, const SceneView& view, const vec4d& minCorner, co
 }
 
 
-void DrawWorldAxis( Bitmap& bitmap, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z )
+void DrawWorldAxis( Image<Color>& bitmap, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z )
 {
 	vec4d points[ 4 ] = {
 		{ vec4d( origin, 1.0 ) },
@@ -177,7 +177,7 @@ void DrawWorldPoint( Bitmap& bitmap, const SceneView& view, const vec4d& point, 
 }
 
 
-void DrawRay( Bitmap& bitmap, const SceneView& view, const Ray& ray, const Color& color )
+void DrawRay( Image<Color>& bitmap, const SceneView& view, const Ray& ray, const Color& color )
 {
 	vec4d ssPt[ 2 ];
 	vec4d wsPt[ 2 ];
@@ -189,7 +189,7 @@ void DrawRay( Bitmap& bitmap, const SceneView& view, const Ray& ray, const Color
 }
 
 
-void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
+void RasterScene( Image<Color>& bitmap, const SceneView& view, bool wireFrame = true )
 {
 	mat4x4d mvp = view.projTransform * view.viewTransform;
 	const uint32_t modelCnt = scene.models.size();
@@ -338,5 +338,5 @@ void RasterScene( Bitmap& bitmap, const SceneView& view, bool wireFrame = true )
 		}
 	}
 
-	ImageToBitmap( zBuffer, *depthBuffer );
+	depthBuffer = zBuffer;
 }

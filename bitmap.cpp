@@ -18,6 +18,7 @@ Bitmap::Bitmap( const Bitmap& bitmap )
 
 	pixelCnt = bitmap.pixelCnt;
 
+	delete[] mapdata;
 	mapdata = new Pixel[ pixelCnt ];
 
 	for ( uint32_t i = 0; i < pixelCnt; ++i )

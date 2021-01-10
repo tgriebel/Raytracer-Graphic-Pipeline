@@ -5,6 +5,7 @@
 #include "matrix.h"
 #include "color.h"
 #include "debug.h"
+#include "image.h"
 
 #define USE_AABB		1
 #define USE_RELFECTION	1
@@ -73,11 +74,11 @@ struct sample_t
 
 struct debug_t
 {
-	Bitmap* diffuse;
-	Bitmap* normal;
-	Bitmap* wireframe;
-	Bitmap* topWire;
-	Bitmap* sideWire;
+	Image<Color> diffuse;
+	Image<Color> normal;
+	Image<Color> wireframe;
+	Image<Color> topWire;
+	Image<Color> sideWire;
 };
 
 
