@@ -37,7 +37,7 @@ debug_t			dbg;
 Image<Color>	colorBuffer;
 Image<float>	depthBuffer;
 
-void RasterScene( Image<Color>& bitmap, const SceneView& view, bool wireFrame = true );
+void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = true );
 
 void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap );
 void ImageToBitmap( const Image<float>& image, Bitmap& bitmap );
@@ -317,7 +317,7 @@ SceneView SetupSideView()
 
 
 
-void DrawScene( Image<Color>& bitmap )
+void DrawScene( Image<Color>& image )
 {
 	views[ VIEW_CAMERA ] = SetupCameraView();
 	views[ VIEW_TOP ] = SetupTopView();
@@ -379,13 +379,13 @@ void DrawScene( Image<Color>& bitmap )
 				dbg.diffuse.SetPixel( imageX, imageY, Color( (float)-diffuse ).AsR8G8B8A8() );
 				dbg.normal.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
 
-				Color dest = Color( bitmap.GetPixel( imageX, imageY ) );
+				Color dest = Color( image.GetPixel( imageX, imageY ) );
 
-				Pixel pixel = BlendColor( src, dest, blendMode_t::SRCALPHA ).AsR8G8B8A8();
-				bitmap.SetPixel( imageX, imageY, pixel.r8g8b8a8 );
+				Color pixel = BlendColor( src, dest, blendMode_t::SRCALPHA );
+				image.SetPixel( imageX, imageY, pixel );
 			}
 		}
-		std::cout << static_cast<int>( 100.0 * ( py / (double) bitmap.GetHeight() ) ) << "% ";
+		std::cout << static_cast<int>( 100.0 * ( py / (double) image.GetHeight() ) ) << "% ";
 	}
 #endif
 

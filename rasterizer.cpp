@@ -15,7 +15,7 @@ extern Image<float> depthBuffer;
 extern ResourceManager rm;
 
 void OrthoMatrixToAxis( const mat4x4d& m, vec3d& origin, vec3d& xAxis, vec3d& yAxis, vec3d& zAxis );
-void DrawWorldAxis( Bitmap& bitmap, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z );
+void DrawWorldAxis( Image<Color>& image, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z );
 
 void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap )
 {
@@ -70,7 +70,8 @@ void ImageToBitmap( const Image<float>& image, Bitmap& bitmap )
 	}
 }
 
-void DrawCube( Image<Color>& bitmap, const SceneView& view, const vec4d& minCorner, const vec4d& maxCorner )
+
+void DrawCube( Image<Color>& image, const SceneView& view, const vec4d& minCorner, const vec4d& maxCorner )
 {
 	vec4d corners[ 8 ] = {
 		// Bottom
@@ -118,17 +119,17 @@ void DrawCube( Image<Color>& bitmap, const SceneView& view, const vec4d& minCorn
 		vec2i  pt1 = ssPts[ edges[ i ][ 1 ] ];
 		Color color = Color::Green;
 		color.a() = 0.4f;
-		DrawLine( bitmap, pt0[ 0 ], pt0[ 1 ], pt1[ 0 ], pt1[ 1 ], color );
+		DrawLine( image, pt0[ 0 ], pt0[ 1 ], pt1[ 0 ], pt1[ 1 ], color );
 	}
 
 	for ( int i = 0; i < 8; ++i )
 	{
-		bitmap.SetPixel( ssPts[ i ][ 0 ], ssPts[ i ][ 1 ], Color::Red );
+		image.SetPixel( ssPts[ i ][ 0 ], ssPts[ i ][ 1 ], Color::Red );
 	}
 }
 
 
-void DrawWorldAxis( Image<Color>& bitmap, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z )
+void DrawWorldAxis( Image<Color>& image, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z )
 {
 	vec4d points[ 4 ] = {
 		{ vec4d( origin, 1.0 ) },
@@ -145,14 +146,14 @@ void DrawWorldAxis( Image<Color>& bitmap, const SceneView& view, double size, co
 		ssPts[ i ] = vec2i( static_cast<int32_t>( pt[ 0 ] ), static_cast<int32_t>( pt[ 1 ] ) );
 	}
 
-	DrawLine( bitmap, ssPts[ 0 ][ 0 ], ssPts[ 0 ][ 1 ], ssPts[ 1 ][ 0 ], ssPts[ 1 ][ 1 ], Color::Red );
-	DrawLine( bitmap, ssPts[ 0 ][ 0 ], ssPts[ 0 ][ 1 ], ssPts[ 2 ][ 0 ], ssPts[ 2 ][ 1 ], Color::Green );
-	DrawLine( bitmap, ssPts[ 0 ][ 0 ], ssPts[ 0 ][ 1 ], ssPts[ 3 ][ 0 ], ssPts[ 3 ][ 1 ], Color::Blue );
-	bitmap.SetPixel( ssPts[ 0 ][ 0 ], ssPts[ 0 ][ 1 ], Color::Black );
+	DrawLine( image, ssPts[ 0 ][ 0 ], ssPts[ 0 ][ 1 ], ssPts[ 1 ][ 0 ], ssPts[ 1 ][ 1 ], Color::Red );
+	DrawLine( image, ssPts[ 0 ][ 0 ], ssPts[ 0 ][ 1 ], ssPts[ 2 ][ 0 ], ssPts[ 2 ][ 1 ], Color::Green );
+	DrawLine( image, ssPts[ 0 ][ 0 ], ssPts[ 0 ][ 1 ], ssPts[ 3 ][ 0 ], ssPts[ 3 ][ 1 ], Color::Blue );
+	image.SetPixel( ssPts[ 0 ][ 0 ], ssPts[ 0 ][ 1 ], Color::Black );
 }
 
 
-void DrawWorldPoint( Bitmap& bitmap, const SceneView& view, const vec4d& point, const int32_t size, const Color& color )
+void DrawWorldPoint( Image<Color>& image, const SceneView& view, const vec4d& point, const int32_t size, const Color& color )
 {
 	vec4d projPt;
 	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), point, projPt );
@@ -171,13 +172,13 @@ void DrawWorldPoint( Bitmap& bitmap, const SceneView& view, const vec4d& point, 
 	{
 		for ( int32_t i = i0; i < iN; ++i )
 		{
-			bitmap.SetPixel( i, j, color.AsR8G8B8A8() );
+			image.SetPixel( i, j, color );
 		}
 	}
 }
 
 
-void DrawRay( Image<Color>& bitmap, const SceneView& view, const Ray& ray, const Color& color )
+void DrawRay( Image<Color>& image, const SceneView& view, const Ray& ray, const Color& color )
 {
 	vec4d ssPt[ 2 ];
 	vec4d wsPt[ 2 ];
@@ -185,11 +186,11 @@ void DrawRay( Image<Color>& bitmap, const SceneView& view, const Ray& ray, const
 	wsPt[ 1 ] = vec4d( ray.GetEndPoint(), 1.0 );
 	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), wsPt[ 0 ], ssPt[ 0 ] );
 	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), wsPt[ 1 ], ssPt[ 1 ] );
-	DrawLine( bitmap, (int)ssPt[ 0 ][ 0 ], (int)ssPt[ 0 ][ 1 ], (int)ssPt[ 1 ][ 0 ], (int)ssPt[ 1 ][ 1 ], color.AsR8G8B8A8() );
+	DrawLine( image, (int)ssPt[ 0 ][ 0 ], (int)ssPt[ 0 ][ 1 ], (int)ssPt[ 1 ][ 0 ], (int)ssPt[ 1 ][ 1 ], color.AsR8G8B8A8() );
 }
 
 
-void RasterScene( Image<Color>& bitmap, const SceneView& view, bool wireFrame = true )
+void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = true )
 {
 	mat4x4d mvp = view.projTransform * view.viewTransform;
 	const uint32_t modelCnt = scene.models.size();
@@ -299,7 +300,7 @@ void RasterScene( Image<Color>& bitmap, const SceneView& view, bool wireFrame = 
 
 							if ( depth < zBuffer.GetPixel( x, y ) )
 							{
-								bitmap.SetPixel( x, y, LinearToSrgb( normalColor ).AsR8G8B8A8() );
+								image.SetPixel( x, y, LinearToSrgb( normalColor ).AsR8G8B8A8() );
 								zBuffer.SetPixel( x, y, depth );
 							}
 						}
@@ -312,9 +313,9 @@ void RasterScene( Image<Color>& bitmap, const SceneView& view, bool wireFrame = 
 				Color color = triCache[ i ].v0.color;
 				color.rgba().a = 0.1f;
 
-				DrawLine( bitmap, pxPts[ 0 ][ 0 ], pxPts[ 0 ][ 1 ], pxPts[ 1 ][ 0 ], pxPts[ 1 ][ 1 ], color );
-				DrawLine( bitmap, pxPts[ 0 ][ 0 ], pxPts[ 0 ][ 1 ], pxPts[ 2 ][ 0 ], pxPts[ 2 ][ 1 ], color );
-				DrawLine( bitmap, pxPts[ 1 ][ 0 ], pxPts[ 1 ][ 1 ], pxPts[ 2 ][ 0 ], pxPts[ 2 ][ 1 ], color );
+				DrawLine( image, pxPts[ 0 ][ 0 ], pxPts[ 0 ][ 1 ], pxPts[ 1 ][ 0 ], pxPts[ 1 ][ 1 ], color );
+				DrawLine( image, pxPts[ 0 ][ 0 ], pxPts[ 0 ][ 1 ], pxPts[ 2 ][ 0 ], pxPts[ 2 ][ 1 ], color );
+				DrawLine( image, pxPts[ 1 ][ 0 ], pxPts[ 1 ][ 1 ], pxPts[ 2 ][ 0 ], pxPts[ 2 ][ 1 ], color );
 			}
 		}
 	}
@@ -326,15 +327,15 @@ void RasterScene( Image<Color>& bitmap, const SceneView& view, bool wireFrame = 
 		{
 			const ModelInstance& model = scene.models[ m ];
 #if DRAW_AABB
-			DrawCube( bitmap, view, vec4d( model.aabb.min, 1.0 ), vec4d( model.aabb.max, 1.0 ) );
-			DrawCube( bitmap, view, vec4d( model.aabb.min, 1.0 ), vec4d( model.aabb.max, 1.0 ) );
+			DrawCube( image, view, vec4d( model.aabb.min, 1.0 ), vec4d( model.aabb.max, 1.0 ) );
+			DrawCube( image, view, vec4d( model.aabb.min, 1.0 ), vec4d( model.aabb.max, 1.0 ) );
 #endif
 			vec3d origin;
 			vec3d xAxis;
 			vec3d yAxis;
 			vec3d zAxis;
 			OrthoMatrixToAxis( model.transform, origin, xAxis, yAxis, zAxis );
-			DrawWorldAxis( bitmap, view, 20.0, origin, xAxis, yAxis, zAxis );
+			DrawWorldAxis( image, view, 20.0, origin, xAxis, yAxis, zAxis );
 		}
 	}
 

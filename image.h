@@ -13,8 +13,8 @@ public:
 		width = 0;
 		height = 0;
 		length = 0;
-		buffer = nullptr;
 		name = "";
+		buffer = nullptr;
 	}
 
 	Image( const uint32_t _width, const uint32_t _height, const T _default = static_cast<T>( 0.0 ), const char* _name = "" )
@@ -29,18 +29,13 @@ public:
 		Clear( _default );
 	}
 
-	~Image()
-	{
-		width = 0;
-		height = 0;
-		length = 0;
-		delete[] buffer;
-		name = "";
-	}
 
-	Image& operator=( const Image& _image )
+	Image( const Image& _image )
 	{
-		delete[] buffer;
+		if ( buffer == nullptr )
+		{
+			delete[] buffer;
+		}
 		buffer = new T[ _image.length ];
 
 		for ( uint32_t i = 0; i < _image.length; ++i )
@@ -52,9 +47,21 @@ public:
 		height = _image.height;
 		length = _image.length;
 		name = _image.name;
-
-		return *this;
 	}
+
+	~Image()
+	{
+		width = 0;
+		height = 0;
+		length = 0;
+		name = "";
+
+		if( buffer == nullptr )
+		{
+			delete[] buffer;
+		}
+	}
+
 
 	bool SetPixel( const int32_t x, const int32_t y, const T& pixel )
 	{

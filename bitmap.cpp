@@ -8,7 +8,12 @@ Bitmap::Bitmap( const std::string& filename )
 
 Bitmap::~Bitmap()
 {
-	delete[] mapdata;
+	if ( mapdata == nullptr )
+	{
+		delete[] mapdata;
+	}
+	pixelCnt = 0;
+	memset( &h, 0, sizeof( headerInfo_t ) );
 }
 
 
@@ -18,7 +23,10 @@ Bitmap::Bitmap( const Bitmap& bitmap )
 
 	pixelCnt = bitmap.pixelCnt;
 
-	delete[] mapdata;
+	if( mapdata == nullptr )
+	{
+		delete[] mapdata;
+	}
 	mapdata = new Pixel[ pixelCnt ];
 
 	for ( uint32_t i = 0; i < pixelCnt; ++i )

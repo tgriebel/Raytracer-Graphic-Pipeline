@@ -30,7 +30,7 @@ DrawLine
 - Optimized bresenham algorithm
 ===================================
 */
-inline void DrawLine( Image<Color>& bitmap, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Color& color, blendMode_t blendMode = blendMode_t::SRCALPHA )
+inline void DrawLine( Image<Color>& image, int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Color& color, blendMode_t blendMode = blendMode_t::SRCALPHA )
 {
 	const int dx = abs( x1 - x0 );
 	const int dy = abs( y1 - y0 );
@@ -41,8 +41,8 @@ inline void DrawLine( Image<Color>& bitmap, int32_t x0, int32_t y0, int32_t x1, 
 
 	while ( ( x0 != x1 ) || ( y0 != y1 ) )
 	{
-		Color finalColor = BlendColor( color, bitmap.GetPixel( x0, y0 ), blendMode );
-		bitmap.SetPixel( x0, y0, finalColor.AsR8G8B8A8() );
+		Color finalColor = BlendColor( color, image.GetPixel( x0, y0 ), blendMode );
+		image.SetPixel( x0, y0, finalColor );
 
 		const int e2 = 2 * e;
 
@@ -59,8 +59,8 @@ inline void DrawLine( Image<Color>& bitmap, int32_t x0, int32_t y0, int32_t x1, 
 		}
 	}
 
-	Color finalColor = BlendColor( color, bitmap.GetPixel( x0, y0 ), blendMode );
-	bitmap.SetPixel( x0, y0, color.AsR8G8B8A8() );
+	Color finalColor = BlendColor( color, image.GetPixel( x0, y0 ), blendMode );
+	image.SetPixel( x0, y0, color );
 }
 
 /*
