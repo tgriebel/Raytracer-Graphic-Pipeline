@@ -164,6 +164,7 @@
     <ClInclude Include="ray.h" />
     <ClInclude Include="resourceManager.h" />
     <ClInclude Include="scene.h" />
+    <ClInclude Include="timer.h" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="models\arma.obj">

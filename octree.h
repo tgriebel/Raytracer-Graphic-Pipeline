@@ -124,6 +124,8 @@ public:
 			return;
 		}
 
+		children.reserve( 8 );
+
 		for( uint8_t i = 0; i < REGION_COUNT; ++i )
 		{
 			AddChild( (octreeRegion_t)i );

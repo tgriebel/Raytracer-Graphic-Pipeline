@@ -342,8 +342,9 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 		{
 			const ModelInstance& model = scene.models[ m ];
 #if DRAW_AABB
-			DrawCube( image, view, vec4d( model.aabb.min, 1.0 ), vec4d( model.aabb.max, 1.0 ) );
-			DrawCube( image, view, vec4d( model.aabb.min, 1.0 ), vec4d( model.aabb.max, 1.0 ) );
+			const AABB bounds = model.octree.GetAABB();
+			DrawCube( image, view, vec4d( bounds.min, 1.0 ), vec4d( bounds.max, 1.0 ) );
+			DrawCube( image, view, vec4d( bounds.min, 1.0 ), vec4d( bounds.max, 1.0 ) );
 #endif
 			vec3d origin;
 			vec3d xAxis;

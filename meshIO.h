@@ -576,6 +576,10 @@ namespace MeshIO
 		state.material = "";
 		state.smoothGroup = 0;
 
+		mesh.vertices.reserve( 10000 );
+		mesh.normals.reserve( 10000 );
+		mesh.uvs.reserve( 10000 );
+
 		while( !inputStream.eof() )
 		{
 			std::string line = "";

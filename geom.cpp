@@ -77,6 +77,8 @@ uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_
 		{
 			std::vector<MeshIO::objFace_t>& faces = smoothGroup->second.faces;
 
+			faces.reserve( 10000 );
+
 			const int32_t faceCnt = faces.size();
 			for ( int32_t faceIx = 0; faceIx < faceCnt; ++faceIx )
 			{

@@ -127,7 +127,6 @@ class ModelInstance
 {
 public:
 	std::vector<Triangle>	triCache;
-	AABB					aabb;
 	Octree<uint32_t>		octree;
 	uint32_t				vb;
 	uint32_t				modelIx;
@@ -137,26 +136,21 @@ public:
 
 	void BuildAS()
 	{
-		ComputeAABB();
+		AABB aabb;
 
-		octree = Octree<uint32_t>( aabb.min, aabb.max );
-
-		const uint32_t triCnt = triCache.size();
-		for( uint32_t i = 0; i < triCnt; ++ i )
-		{
-			// Build the octree using triangle indices
-			octree.Insert( triCache[ i ].aabb, i );
-		}
-	}
-
-private:
-	void ComputeAABB() // deprecated
-	{
 		const size_t triCnt = triCache.size();
 		for ( size_t i = 0; i < triCnt; ++i )
 		{
 			aabb.Expand( triCache[ i ].aabb.min );
 			aabb.Expand( triCache[ i ].aabb.max );
+		}
+
+		octree = Octree<uint32_t>( aabb.min, aabb.max );
+
+		for( uint32_t i = 0; i < triCnt; ++ i )
+		{
+			// Build the octree using triangle indices
+			octree.Insert( triCache[ i ].aabb, i );
 		}
 	}
 };

@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <tuple>
 #include <map>
+#include <thread>
 #include "common.h"
 #include "bitmap.h"
 #include "color.h"
@@ -24,12 +25,13 @@
 #include "debug.h"
 #include "globals.h"
 #include "image.h"
+#include "timer.h"
 
 ResourceManager	rm;
 
 material_t mirrorMaterial = { 0.3, 1.0, 0.0, 1.0, 1.0, false };
 material_t diffuseMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, true };
-material_t colorMaterial = { 1.0, 1.0, 1.0, 1.0, 0.1, false };
+material_t colorMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, false };
 
 Scene			scene;
 SceneView		views[4];
@@ -42,12 +44,14 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap );
 void ImageToBitmap( const Image<float>& image, Bitmap& bitmap );
 
+static Color skyColor = Color::Blue;
+
 sample_t RecordSkyInfo( const Ray& r, const double t )
 {
 	sample_t sample;
 
 	const double skyDot = Dot( r.GetVector(), vec3d( 0.0, 0.0, 1.0 ) );
-	const Color gradient = Lerp( Color( Color::DGrey ), Color( Color::Blue ), Saturate( skyDot ) );
+	const Color gradient = Lerp( Color( Color::White ), skyColor, Saturate( skyDot ) );
 
 	sample.color = gradient;
 	sample.albedo = gradient;
@@ -123,7 +127,7 @@ bool IntersectScene( const Ray& ray, const bool cullBackfaces, const bool stopAt
 #if USE_AABB
 		double t0 = 0.0;
 		double t1 = 0.0;
-		if ( !model.aabb.Intersect( ray, t0, t1 ) )
+		if ( !model.octree.GetAABB().Intersect( ray, t0, t1 ) )
 		{
 			continue;
 		}
@@ -194,15 +198,33 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 		vec3d viewVector = ray.GetVector().Reverse();
 		viewVector = viewVector.Normalize();
 
+		Color relfectionColor = Color::Black;
+#if USE_RELFECTION
+		if ( ( rayDepth < MaxBounces ) && ( material.Kr > 0.0 ) )
+		{
+			const vec3d reflectVector = 2.0 * Dot( viewVector, surfaceSample.normal ) * surfaceSample.normal - viewVector;
+
+			Ray reflectionRay = Ray( surfaceSample.pt, surfaceSample.pt + reflectVector );
+
+			reflectionRay.maxt = DBL_MAX;//std::max( 0.0, reflectionVector.t - reflectionVector.mint );
+
+			const sample_t reflectSample = RayTrace_r( reflectionRay, rayDepth + 1 );
+			relfectionColor = material.Kr * reflectSample.color;
+
+			sample = surfaceSample;
+			sample.color = relfectionColor;
+
+			return sample;
+		}
+#endif
+
 		const size_t lightCnt = scene.lights.size();
 		for ( size_t li = 0; li < lightCnt; ++li )
 		{
 			vec3d& lightPos = scene.lights[ li ].pos;
 
+			
 			Ray shadowRay = Ray( surfaceSample.pt, lightPos );
-
-//			DrawRay( *dbg.topWire, views[ VIEW_TOP ], shadowRay, Color::Black );
-//			DrawRay( *dbg.sideWire, views[ VIEW_SIDE ], shadowRay, Color::Black );
 
 			sample_t shadowSample;
 #if USE_SHADOWS
@@ -212,8 +234,6 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 #endif
 
 			Color shadingColor = Color::Black;
-			Color relfectionColor = Color::Black;
-
 			if ( !lightOccluded )
 			{
 				const double intensity = scene.lights[ li ].intensity;
@@ -226,20 +246,6 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 				const double diffuseIntensity = material.Kd * intensity * std::max( 0.0, Dot( lightDir, surfaceSample.normal ) );
 
 				const double specularIntensity = material.Ks * pow( std::max( 0.0, Dot( surfaceSample.normal, halfVector ) ), SpecularPower );
-
-#if USE_RELFECTION
-				if ( ( rayDepth < MaxBounces ) && ( material.Kr > 0.0 ) )
-				{
-					const vec3d reflectVector = 2.0 * Dot( viewVector, surfaceSample.normal ) * surfaceSample.normal - viewVector;
-
-					Ray reflectionRay = Ray( surfaceSample.pt, surfaceSample.pt + reflectVector );
-
-					reflectionRay.maxt = DBL_MAX;//std::max( 0.0, reflectionVector.t - reflectionVector.mint );
-
-					const sample_t reflectSample = RayTrace_r( reflectionRay, rayDepth + 1 );
-					relfectionColor = material.Kr * reflectSample.color;
-				}
-#endif
 
 				shadingColor = ( (float) diffuseIntensity * surfaceColor ) + Color( (float) specularIntensity );
 			}
@@ -256,7 +262,6 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 
 	return sample;
 }
-
 
 
 SceneView SetupCameraView()
@@ -322,84 +327,134 @@ SceneView SetupSideView()
 }
 
 
-
-
-void DrawScene( Image<Color>& image )
+void SetupViews()
 {
 	views[ VIEW_CAMERA ] = SetupCameraView();
 	views[ VIEW_TOP ] = SetupTopView();
 	views[ VIEW_SIDE ] = SetupSideView();
+}
 
+
+void TracePixel( Image<Color>& image, const uint32_t px, const uint32_t py )
+{
 #if USE_SS4X
-	const uint32_t subSampleCnt = 4;
-	const vec2d subPixelOffsets[ subSampleCnt ] = { vec2d( 0.25, 0.25 ), vec2d( 0.75, 0.25 ), vec2d( 0.25, 0.75 ), vec2d( 0.75, 0.75 ) };
+	static const uint32_t subSampleCnt = 4;
+	static const vec2d subPixelOffsets[ subSampleCnt ] = { vec2d( 0.25, 0.25 ), vec2d( 0.75, 0.25 ), vec2d( 0.25, 0.75 ), vec2d( 0.75, 0.75 ) };
 #else
-	const uint32_t subSampleCnt = 1;
-	const vec2d subPixelOffsets[ subSampleCnt ] = { vec2d( 0.5, 0.5 ) };
+	static const uint32_t subSampleCnt = 1;
+	static const vec2d subPixelOffsets[ subSampleCnt ] = { vec2d( 0.5, 0.5 ) };
 #endif
 
-#if USE_RAYTRACE
-	for ( uint32_t py = 0; py < RenderHeight; ++py )
+	Color pixelColor = Color::Black;
+	vec3d normal = vec3d( 0.0, 0.0, 0.0 );
+	double diffuse = 0.0; // Eye-to-Surface
+	double coverage = 0.0;
+	double t = 0.0;
+
+	sample_t sample;
+	sample.hitCode = HIT_NONE;
+
+	for ( int32_t s = 0; s < subSampleCnt; ++s ) // Subsamples
 	{
-		for ( uint32_t px = 0; px < RenderWidth; ++px )
-		{
-			Color pixelColor = Color::Black;
-			vec3d normal = vec3d( 0.0, 0.0, 0.0 );
-			double diffuse = 0.0; // Eye-to-Surface
-			double coverage = 0.0;
-			double t = 0.0;
+		vec2d pixelXY = vec2d( static_cast<double>( px ), static_cast<double>( py ) );
+		pixelXY += subPixelOffsets[ s ];
+		vec2d uv = vec2d( pixelXY[ 0 ] / ( RenderWidth - 1.0 ), pixelXY[ 1 ] / ( RenderHeight - 1.0 ) );
 
-			sample_t sample;
-			sample.hitCode = HIT_NONE;
+		Ray ray = views[ VIEW_CAMERA ].camera.GetViewRay( uv );
 
-			for ( int32_t s = 0; s < subSampleCnt; ++s ) // Subsamples
-			{
-				vec2d pixelXY = vec2d( static_cast<double>( px ), static_cast<double>( py ) );
-				pixelXY += subPixelOffsets[ s ];
-				vec2d uv = vec2d( pixelXY[0] / ( RenderWidth - 1.0 ), pixelXY[1] / ( RenderHeight - 1.0 ) );
-
-				Ray ray = views[ VIEW_CAMERA ].camera.GetViewRay( uv );
-
-				sample = RayTrace_r( ray, 0 );
-				pixelColor += sample.color;
-				diffuse += sample.surfaceDot;
-				normal += sample.normal;
-				t += sample.t;
-				coverage += sample.hitCode != HIT_NONE ? 1.0 : 0.0;
-			}
-		
-			if ( coverage > 0.0 )
-			{
-				int32_t imageX = static_cast<int32_t>( px );
-				int32_t imageY = static_cast<int32_t>( py );
-
-				coverage /= subSampleCnt;
-				diffuse /= subSampleCnt;
-				normal = normal.Normalize();
-				t /= subSampleCnt;
-
-				Color src = Color( LinearToSrgb( ( 1.0f / subSampleCnt ) * pixelColor ) );
-				src.rgba().a = (float) coverage;
-
-				// normal = normal.Reverse();
-				Color normColor = Vec4dToColor( vec4d( 0.5 * normal + vec3d( 0.5 ), 1.0 ) );
-				dbg.diffuse.SetPixel( imageX, imageY, Color( (float)-diffuse ).AsR8G8B8A8() );
-				dbg.normal.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
-
-				Color dest = Color( image.GetPixel( imageX, imageY ) );
-
-				Color pixel = BlendColor( src, dest, blendMode_t::SRCALPHA );
-				image.SetPixel( imageX, imageY, pixel );
-			}
-		}
-		std::cout << static_cast<int>( 100.0 * ( py / (double) image.GetHeight() ) ) << "% ";
+		sample = RayTrace_r( ray, 0 );
+		pixelColor += sample.color;
+		diffuse += sample.surfaceDot;
+		normal += sample.normal;
+		t += sample.t;
+		coverage += sample.hitCode != HIT_NONE ? 1.0 : 0.0;
 	}
+
+	if ( coverage > 0.0 )
+	{
+		int32_t imageX = static_cast<int32_t>( px );
+		int32_t imageY = static_cast<int32_t>( py );
+
+		coverage /= subSampleCnt;
+		diffuse /= subSampleCnt;
+		normal = normal.Normalize();
+		t /= subSampleCnt;
+
+		Color src = Color( LinearToSrgb( ( 1.0f / subSampleCnt ) * pixelColor ) );
+		src.rgba().a = (float)coverage;
+
+		// normal = normal.Reverse();
+		Color normColor = Vec4dToColor( vec4d( 0.5 * normal + vec3d( 0.5 ), 1.0 ) );
+		dbg.diffuse.SetPixel( imageX, imageY, Color( (float)-diffuse ).AsR8G8B8A8() );
+		dbg.normal.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
+
+		Color dest = Color( image.GetPixel( imageX, imageY ) );
+
+		Color pixel = BlendColor( src, dest, blendMode_t::SRCALPHA );
+		image.SetPixel( imageX, imageY, pixel );
+	}
+}
+
+
+void TracePatch( Image<Color>* image, const vec2i& p0, const vec2i& p1 )
+{
+	const int32_t x0 = p0[ 0 ];
+	const int32_t y0 = p0[ 1 ];
+	const int32_t x1 = p1[ 0 ];
+	const int32_t y1 = p1[ 1 ];
+
+	for ( uint32_t py = y0; py < y1; ++py )
+	{
+		if( py >= image->GetHeight() )
+			return;
+
+		for ( uint32_t px = x0; px < x1; ++px )
+		{
+			if ( px >= image->GetWidth() )
+				return;
+
+			TracePixel( *image, px, py );
+		}
+	}
+}
+
+
+void TraceScene( Image<Color>& image )
+{
+#if USE_RAYTRACE
+
+	std::vector<std::thread> threads;
+
+	const uint32_t patchSize = 120;
+	for ( uint32_t py = 0; py < RenderHeight; py += patchSize )
+	{
+		for ( uint32_t px = 0; px < RenderWidth; px += patchSize )
+		{
+			threads.push_back( std::thread( TracePatch, &image, vec2i( px, py ), vec2i( px + patchSize, py + patchSize ) ) );
+		}
+	}
+
+	for ( auto& thread : threads )
+	{
+		thread.join();
+	}
+
+//	std::cout << static_cast<int>( 100.0 * ( py / (double) image.GetHeight() ) ) << "% ";
+#endif
+}
+
+
+void RastizeViews()
+{
+#if USE_RASTERIZE
+	RasterScene( colorBuffer, views[ VIEW_CAMERA ], false );
 #endif
 
-	RasterScene( colorBuffer, views[ VIEW_CAMERA ], false );
+#if DRAW_WIREFRAME
 	RasterScene( dbg.wireframe, views[ VIEW_CAMERA ] );
 	RasterScene( dbg.topWire, views[ VIEW_TOP ] );
 	RasterScene( dbg.sideWire, views[ VIEW_SIDE ] );
+#endif
 }
 
 
@@ -444,15 +499,12 @@ void BuildScene()
 	uint32_t vb = rm.AllocVB();
 	uint32_t ib = rm.AllocIB();
 
+	/*
 	modelIx = LoadModelObj( std::string( "models/teapot.obj" ), vb, ib );
-	{
-	//	StoreModelObj( std::string( "models/teapot-outtest.obj" ), modelIx );
-	}
-
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
-		/*
+		
 		ModelInstance teapot0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 10.0 ), vec3d( 0.0, 0.0, -90.0 ), 1.0, RHS_XZY );
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Yellow, &teapot0, colorMaterial );
@@ -462,8 +514,8 @@ void BuildScene()
 		modelMatrix = BuildModelMatrix( vec3d( -30.0, -50.0, 10.0 ), vec3d( 0.0, 0.0, 30.0 ), 1.0, RHS_XZY );
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Green, &teapot1, colorMaterial );
 		scene.models.push_back( teapot1 );
-		*/
 	}
+	*/
 
 	modelIx = LoadModelObj( std::string( "models/sphere.obj" ), vb, ib );
 	if( modelIx >= 0 )
@@ -525,6 +577,14 @@ void BuildScene()
 		*/
 	}
 
+	const size_t modelCnt = scene.models.size();
+	for ( size_t m = 0; m < modelCnt; ++m )
+	{
+		ModelInstance& model = scene.models[ m ];
+		scene.aabb.Expand( model.octree.GetAABB().min );
+		scene.aabb.Expand( model.octree.GetAABB().max );
+	}
+
 	// Textures
 	{
 		Bitmap skullTexture = Bitmap( "textures/Skull.bmp" );
@@ -581,7 +641,13 @@ int main(void)
 {
 	std::cout << "Running Raytracer/Rasterizer" << std::endl;
 
+	Timer loadTimer;
+
+	loadTimer.Start();
 	BuildScene();
+	loadTimer.Stop();
+
+	std::cout << "Load Time: " << loadTimer.GetElapsed() << "ms" << std::endl;
 
 	dbg.diffuse = Image<Color>( RenderWidth, RenderHeight, Color::Red, "dbgDiffuse" );
 	dbg.normal = Image<Color>( RenderWidth, RenderHeight, Color::White, "dbgNormal" );
@@ -595,10 +661,20 @@ int main(void)
 	Image<Color> frameBuffer = Image<Color>( RenderWidth, RenderHeight, Color::DGrey, "_frameBuffer" );
 	DrawGradientImage( frameBuffer, Color::Blue, Color::Red, 0.8f );
 
+	SetupViews();
+
 	const int32_t imageCnt = 1;
 	for ( int32_t i = 0; i < imageCnt; ++i )
 	{
-		DrawScene( frameBuffer );
+		Timer traceTimer;
+
+		traceTimer.Start();
+		TraceScene( frameBuffer );
+		traceTimer.Stop();
+
+		RastizeViews();
+
+		std::cout << "\n\nTrace Time: " << traceTimer.GetElapsed() << "ms" << std::endl;
 
 		WriteImage( frameBuffer, "output", i );
 	}
