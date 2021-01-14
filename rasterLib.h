@@ -240,6 +240,50 @@ inline void ApplyBlur( Bitmap& bitmap, Bitmap& output )
 	output.Write( "convolution.bmp" );
 }
 
+/*
+===================================
+Cohen–Sutherland Algorithm
+- Classifies 2D point relative to clipping region
+===================================
+*/
+enum clipRegion_t
+{
+	CLIP_REGION_INSIDE	= 0x00,
+	CLIP_REGION_LEFT	= 0x01,
+	CLIP_REGION_RIGHT	= 0x02,
+	CLIP_REGION_BOTTOM	= 0x04,
+	CLIP_REGION_TOP		= 0x08,
+};
+
+
+inline uint32_t ComputeClipCode( const vec2d& pt )
+{
+	uint32_t code;
+
+	const double clipSize = 2.0;
+	code = CLIP_REGION_INSIDE;
+
+	if ( pt[ 0 ] < clipSize )
+	{
+		code |= CLIP_REGION_LEFT;
+	}
+	else if ( pt[ 0 ] > clipSize )
+	{
+		code |= CLIP_REGION_RIGHT;
+	}
+
+	if ( pt[ 1 ] < clipSize )
+	{
+		code |= CLIP_REGION_BOTTOM;
+	}
+	else if ( pt[ 1 ] > clipSize )
+	{
+		code |= CLIP_REGION_TOP;
+	}
+
+	return code;
+}
+
 
 /*
 ===================================
@@ -247,7 +291,7 @@ ProjectPoint
 - Projects point from world space into screen space
 ===================================
 */
-inline bool ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const vec4d& worldSpacePt, vec4d& outPoint )
+inline void ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const vec4d& worldSpacePt, vec4d& outPoint )
 {
 	// Clip-Space
 	vec4d csPt = mvp * vec4d( worldSpacePt[ 0 ], worldSpacePt[ 1 ], worldSpacePt[ 2 ], 1.0 );
@@ -261,8 +305,6 @@ inline bool ProjectPoint( const mat4x4d& mvp, const vec2i& screenSize, const vec
 	outPoint[ 1 ] = 0.5 * screenSize[ 1 ] * ( ndsPt[ 1 ] + 1.0 );
 	outPoint[ 2 ] = ndsPt[ 2 ];
 	outPoint[ 3 ] = w;
-
-	return false;
 }
 
 
@@ -271,9 +313,9 @@ inline T Interpolate( const vec3d& baryCoord, const T attrib[3] )
 {
 	T value;
 
-	value = ( baryCoord[ 0 ] * attrib[ 0 ][ 2 ] );
-	value += ( baryCoord[ 1 ] * attrib[ 1 ][ 2 ] );
-	value += ( baryCoord[ 2 ] * attrib[ 2 ][ 2 ] );
+	value = ( baryCoord[ 0 ] * attrib[ 0 ] );
+	value += ( baryCoord[ 1 ] * attrib[ 1 ] );
+	value += ( baryCoord[ 2 ] * attrib[ 2 ] );
 
 	return value;
 }

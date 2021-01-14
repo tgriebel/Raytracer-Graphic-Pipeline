@@ -14,22 +14,33 @@ private:
 	std::vector<Bitmap>			imageBuffer; // TODO: use image class instead of bitmap
 public:
 
+	ResourceManager()
+	{
+		vertexBuffers.reserve( 10 );
+		indexBuffers.reserve( 10 );
+		modelBuffer.reserve( 10 );
+		imageBuffer.reserve( 10 );
+	}
+
 	static const uint32_t InvalidModelIx = ~0x00;
 
 	uint32_t AllocVB()
 	{
+		vertexBuffers.reserve( 10000 );
 		vertexBuffers.resize( vertexBuffers.size() + 1 );
 		return static_cast<uint32_t>( vertexBuffers.size() - 1 );
 	}
 
 	uint32_t AllocIB()
 	{
+		indexBuffers.reserve( 10000 );
 		indexBuffers.resize( indexBuffers.size() + 1 );
 		return static_cast<uint32_t>( indexBuffers.size() - 1 );
 	}
 
 	uint32_t AllocModel()
 	{
+		indexBuffers.reserve( 100 );
 		modelBuffer.push_back( Model() );
 		return static_cast<uint32_t>( modelBuffer.size() - 1 );
 	}

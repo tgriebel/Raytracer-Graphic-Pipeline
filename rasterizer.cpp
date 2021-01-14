@@ -8,8 +8,7 @@
 #include "resourceManager.h"
 #include "octree.h"
 
-static Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
-static Image<float> hiZ( static_cast<uint32_t>( 0.25 * RenderWidth ), static_cast<uint32_t>( 0.25 * RenderHeight ), 1.0f, "_hiZ" );
+Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
 
 extern Scene scene;
 extern Image<float> depthBuffer;
@@ -17,6 +16,28 @@ extern ResourceManager rm;
 
 void OrthoMatrixToAxis( const mat4x4d& m, vec3d& origin, vec3d& xAxis, vec3d& yAxis, vec3d& zAxis );
 void DrawWorldAxis( Image<Color>& image, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z );
+
+struct vertexOut_t
+{
+	vec4d	wsPosition[ 3 ];
+	vec4d	viewPosition[ 3 ];
+	vec4d	clipPosition[ 3 ];
+	vec4d	ndc[ 3 ];
+	vec3d	normal[ 3 ];
+	vec2d	uv[ 3 ];
+	Color	color[ 3 ];
+};
+
+
+struct fragmentInput_t
+{
+	vec4d	wsPosition;
+	vec4d	clipPosition;
+	vec3d	normal;
+	vec2d	uv;
+	Color	color;
+};
+
 
 void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap )
 {
@@ -205,6 +226,81 @@ void DrawOctree( Image<Color>& image, const SceneView& view, const Octree<T>& oc
 }
 
 
+bool VertexShader( const SceneView& view, const Triangle& tri, vertexOut_t& outVertex )
+{
+	const mat4x4d& mvp = view.projView;
+
+	const vec4d* wsPts[ 3 ];
+	vec4d ssPts[ 3 ];
+	bool culled = false;
+
+	wsPts[ 0 ] = &tri.v0.pos;
+	wsPts[ 1 ] = &tri.v1.pos;
+	wsPts[ 2 ] = &tri.v2.pos;
+
+	ProjectPoint( mvp, RenderSize, *wsPts[ 0 ], ssPts[ 0 ] );
+	ProjectPoint( mvp, RenderSize, *wsPts[ 1 ], ssPts[ 1 ] );
+	ProjectPoint( mvp, RenderSize, *wsPts[ 2 ], ssPts[ 2 ] );
+
+	const bool nearClip = ( ssPts[ 0 ][ 2 ] < -1.0 ) && ( ssPts[ 1 ][ 2 ] < -1.0 ) && ( ssPts[ 2 ][ 2 ] < -1.0 );
+
+	if( !culled && !nearClip )
+	{
+		outVertex.clipPosition[ 0 ] = ssPts[ 0 ];
+		outVertex.wsPosition[ 0 ] = tri.v0.pos;
+		outVertex.color[ 0 ] = tri.v0.color;
+		outVertex.uv[ 0 ] = tri.v0.uv;
+		outVertex.normal[ 0 ] = tri.v0.normal;
+
+		outVertex.clipPosition[ 1 ] = ssPts[ 1 ];
+		outVertex.wsPosition[ 1 ] = tri.v1.pos;
+		outVertex.color[ 1 ] = tri.v1.color;
+		outVertex.uv[ 1 ] = tri.v1.uv;
+		outVertex.normal[ 1 ] = tri.v1.normal;
+
+		outVertex.clipPosition[ 2 ] = ssPts[ 2 ];
+		outVertex.wsPosition[ 2 ] = tri.v2.pos;
+		outVertex.color[ 2 ] = tri.v2.color;
+		outVertex.uv[ 2 ] = tri.v2.uv;
+		outVertex.normal[ 2 ] = tri.v2.normal;
+
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+
+bool EmitFragment( const vec3d& baryPt, const vertexOut_t& vo, fragmentInput_t& outFragment )
+{
+	if( ( baryPt[ 0 ] < 0.0 ) || ( baryPt[ 1 ] < 0.0 ) || ( baryPt[ 2 ] < 0.0 ) )
+	{
+		return false;
+	}
+
+	if ( ( baryPt[ 0 ] > 1.0 ) || ( baryPt[ 1 ] > 1.0 ) || ( baryPt[ 2 ] > 1.0 ) )
+	{
+	//	return false;
+	}
+
+	outFragment.wsPosition = Interpolate( baryPt, vo.wsPosition ); // TODO: is this ok?
+	outFragment.clipPosition = Interpolate( baryPt, vo.clipPosition );
+	outFragment.normal = Interpolate( baryPt, vo.normal );
+	outFragment.uv = Interpolate( baryPt, vo.uv );
+	outFragment.color = Interpolate( baryPt, vo.color );
+
+	return true;
+}
+
+
+bool PixelShader( const fragmentInput_t & frag )
+{
+	return false;
+}
+
+
 void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = true )
 {
 	mat4x4d mvp = view.projTransform * view.viewTransform;
@@ -219,27 +315,11 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 		const size_t triCnt = model.triCache.size();
 		for ( uint32_t i = 0; i < triCnt; ++i )
 		{
-			const vec4d* wsPts[ 3 ];
-			vec4d ssPts[ 3 ];
-			int culled = 0;
-
-			wsPts[ 0 ] = &triCache[ i ].v0.pos;
-			wsPts[ 1 ] = &triCache[ i ].v1.pos;
-			wsPts[ 2 ] = &triCache[ i ].v2.pos;
-
-			culled += ProjectPoint( mvp, RenderSize, *wsPts[ 0 ], ssPts[ 0 ] );
-			culled += ProjectPoint( mvp, RenderSize, *wsPts[ 1 ], ssPts[ 1 ] );
-			culled += ProjectPoint( mvp, RenderSize, *wsPts[ 2 ], ssPts[ 2 ] );
-
-			if ( culled >= 3 )
+			vertexOut_t vo;
+			if ( !VertexShader( view, triCache[ i ], vo ) )
 			{
 				continue;
 			}
-
-			vec2i pxPts[ 3 ];
-			pxPts[ 0 ] = vec2i( static_cast<int32_t>( ssPts[ 0 ][ 0 ] ), static_cast<int32_t>( ssPts[ 0 ][ 1 ] ) );
-			pxPts[ 1 ] = vec2i( static_cast<int32_t>( ssPts[ 1 ][ 0 ] ), static_cast<int32_t>( ssPts[ 1 ][ 1 ] ) );
-			pxPts[ 2 ] = vec2i( static_cast<int32_t>( ssPts[ 2 ][ 0 ] ), static_cast<int32_t>( ssPts[ 2 ][ 1 ] ) );
 
 #if USE_RASTERIZE
 			if ( !wireFrame )
@@ -248,17 +328,17 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 				AABB ssBox;
 				for ( int i = 0; i < 3; ++i )
 				{
-					ssBox.Expand( Trunc<4, 1>( ssPts[ i ] ) );
+					ssBox.Expand( Trunc<4, 1>( vo.clipPosition[ i ] ) );
 				}
 
-				const vec3d tPt0 = Trunc<4, 1>( ssPts[ 0 ] );
-				const vec3d tPt1 = Trunc<4, 1>( ssPts[ 1 ] );
-				const vec3d tPt2 = Trunc<4, 1>( ssPts[ 2 ] );
+				const vec3d tPt0 = Trunc<4, 1>( vo.clipPosition[ 0 ] );
+				const vec3d tPt1 = Trunc<4, 1>( vo.clipPosition[ 1 ] );
+				const vec3d tPt2 = Trunc<4, 1>( vo.clipPosition[ 2 ] );
 
-				const int32_t x0 = static_cast<int>( ssBox.min[ 0 ] );
-				const int32_t x1 = static_cast<int>( ssBox.max[ 0 ] + 0.5 );
-				const int32_t y0 = static_cast<int>( ssBox.min[ 1 ] );
-				const int32_t y1 = static_cast<int>( ssBox.max[ 1 ] + 0.5 );
+				const int32_t x0 = std::max( 0,										static_cast<int>( ssBox.min[ 0 ] ) );
+				const int32_t x1 = std::min( static_cast<int>( image.GetWidth() ),	static_cast<int>( ssBox.max[ 0 ] + 0.5 ) );
+				const int32_t y0 = std::max( 0,										static_cast<int>( ssBox.min[ 1 ] ) );
+				const int32_t y1 = std::min( static_cast<int>( image.GetHeight() ),	static_cast<int>( ssBox.max[ 1 ] + 0.5 ) );
 
 				for ( int32_t y = y0; y <= y1; ++y )
 				{
@@ -266,58 +346,51 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 					{
 						const vec3d baryPt = PointToBarycentric( vec3d( x, y, 0.0 ), tPt0, tPt1, tPt2 );
 
-						float depth = (float)Interpolate( baryPt, ssPts )[ 2 ];
-						const vec3d wsPoint = vec3d( x, y, depth );
+						fragmentInput_t fragmentInput;
+						if( !EmitFragment( baryPt, vo, fragmentInput ) )
+							continue;
 
-						const vec3d wsBaryPt = PointToBarycentric( vec3d( x, y, depth ), Trunc<4, 1>( triCache[ i ].v0.pos ), Trunc<4, 1>( triCache[ i ].v1.pos ), Trunc<4, 1>( triCache[ i ].v2.pos ) );
+						const float depth = (float)fragmentInput.clipPosition[ 2 ];
+						const vec3d normal = fragmentInput.normal.Normalize();
 
-						if ( ( baryPt[ 0 ] >= 0 ) && ( baryPt[ 1 ] >= 0 ) && ( baryPt[ 2 ] >= 0 ) )
+						const light_t light = scene.lights[ 0 ];
+						const double intensity = light.intensity;
+
+						vec3d lightDir = light.pos - Trunc<4, 1>( fragmentInput.wsPosition );
+						lightDir = lightDir.Normalize();
+
+						const Ray viewRay = view.camera.GetViewRay( vec2d( x / (double)RenderWidth, y / (double)RenderHeight ) );
+
+						const vec3d viewVector = viewRay.GetVector().Reverse();
+						const Color viewDiffuse = Color( (float)Dot( viewVector, normal ) );
+
+						const vec3d halfVector = ( viewVector + lightDir ).Normalize();
+
+						Color color = Color::Black;
+
+						if( model.material.textured )
 						{
-							
-							vec3d normal = baryPt[ 0 ] * triCache[ i ].v0.normal;
-							normal += baryPt[ 1 ] * triCache[ i ].v1.normal;
-							normal += baryPt[ 2 ] * triCache[ i ].v2.normal;
-							normal = normal.Normalize();
+							const Bitmap* texture = rm.GetImageRef( 0 );
+							const uint32_t texel = texture->GetPixel( fragmentInput.uv[ 0 ] * texture->GetWidth(), fragmentInput.uv[ 1 ] * texture->GetHeight() );
+							color = texel;
+						}
+						else
+						{
+							color += fragmentInput.color;
+						}
 
-							vec2d uv = baryPt[ 0 ] * triCache[ i ].v0.uv;
-							uv += baryPt[ 1 ] * triCache[ i ].v1.uv;
-							uv += baryPt[ 2 ] * triCache[ i ].v2.uv;
+						const float diffuse = model.material.Kd * intensity * std::max( 0.0, Dot( normal, lightDir ) );
+						const double specularIntensity = model.material.Ks * pow( std::max( 0.0, Dot( normal, halfVector ) ), SpecularPower );
+						const Color ambient = AmbientLight * ( (float)model.material.Ka * color );
 
-							// normal = triCache[ i ].n;
+						const Color shadingColor = ( (float)diffuse * color ) + Color( (float)specularIntensity ) + ambient;
 
-							vec3d lightDir = scene.lights[ 0 ].pos - wsPoint;
-							lightDir = lightDir.Normalize();
-							float diffuse = Saturate( Dot( normal, lightDir ) );
+						const Color normalColor = Vec3dToColor( 0.5 * normal + vec3d( 0.5 ) );
 
-							const Ray viewRay = view.camera.GetViewRay( vec2d( x / (double)RenderWidth, y / (double)RenderHeight ) );
-
-							const Color viewDiffuse = Color( (float)Dot( viewRay.d.Normalize().Reverse(), normal ) );
-
-							Color color = Color::Black;
-
-							if( model.material.textured )
-							{
-								const Bitmap* texture = rm.GetImageRef( 0 );
-								const uint32_t texel = texture->GetPixel( uv[ 0 ] * texture->GetWidth(), uv[ 1 ] * texture->GetHeight() );
-								color = texel;
-							}
-							else
-							{
-								color += baryPt[ 0 ] * triCache[ i ].v0.color;
-								color += baryPt[ 1 ] * triCache[ i ].v1.color;
-								color += baryPt[ 2 ] * triCache[ i ].v2.color;
-							}
-					
-							color *= diffuse;
-							color += 0.05f;
-
-							const Color normalColor = Color( 0.5f * normal[ 0 ] + 0.5f, 0.5f * normal[ 1 ] + 0.5f, 0.5f * normal[ 2 ] + 0.5f );
-
-							if ( depth < zBuffer.GetPixel( x, y ) )
-							{
-								image.SetPixel( x, y, LinearToSrgb( normalColor ).AsR8G8B8A8() );
-								zBuffer.SetPixel( x, y, depth );
-							}
+						if ( depth < zBuffer.GetPixel( x, y ) )
+						{
+							image.SetPixel( x, y, LinearToSrgb( shadingColor ).AsR8G8B8A8() );
+							zBuffer.SetPixel( x, y, depth );
 						}
 					}
 				}
@@ -325,8 +398,13 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 			else
 #endif
 			{
-				Color color = triCache[ i ].v0.color;
+				Color color = vo.color[ 0 ];
 				color.rgba().a = 0.1f;
+
+				vec2i pxPts[ 3 ];
+				pxPts[ 0 ] = vec2i( static_cast<int32_t>( vo.clipPosition[ 0 ][ 0 ] ), static_cast<int32_t>( vo.clipPosition[ 0 ][ 1 ] ) );
+				pxPts[ 1 ] = vec2i( static_cast<int32_t>( vo.clipPosition[ 1 ][ 0 ] ), static_cast<int32_t>( vo.clipPosition[ 1 ][ 1 ] ) );
+				pxPts[ 2 ] = vec2i( static_cast<int32_t>( vo.clipPosition[ 2 ][ 0 ] ), static_cast<int32_t>( vo.clipPosition[ 2 ][ 1 ] ) );
 
 				DrawLine( image, pxPts[ 0 ][ 0 ], pxPts[ 0 ][ 1 ], pxPts[ 1 ][ 0 ], pxPts[ 1 ][ 1 ], color );
 				DrawLine( image, pxPts[ 0 ][ 0 ], pxPts[ 0 ][ 1 ], pxPts[ 2 ][ 0 ], pxPts[ 2 ][ 1 ], color );
@@ -356,6 +434,4 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 	}
 	
 	// DrawOctree( image, view, scene.models[ 0 ].octree, Color::Red );
-
-	depthBuffer = zBuffer;
 }

@@ -39,6 +39,8 @@ debug_t			dbg;
 Image<Color>	colorBuffer;
 Image<float>	depthBuffer;
 
+extern Image<float> zBuffer;
+
 void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = true );
 
 void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap );
@@ -241,7 +243,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 				vec3d lightDir = shadowRay.GetVector();
 				lightDir = lightDir.Normalize();
 
-				vec3d halfVector = ( viewVector + lightDir ).Normalize();
+				const vec3d halfVector = ( viewVector + lightDir ).Normalize();
 
 				const double diffuseIntensity = material.Kd * intensity * std::max( 0.0, Dot( lightDir, surfaceSample.normal ) );
 
@@ -264,7 +266,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 }
 
 
-SceneView SetupCameraView()
+SceneView SetupFrontView()
 {
 	SceneView view;
 
@@ -329,7 +331,7 @@ SceneView SetupSideView()
 
 void SetupViews()
 {
-	views[ VIEW_CAMERA ] = SetupCameraView();
+	views[ VIEW_FRONT ] = SetupFrontView();
 	views[ VIEW_TOP ] = SetupTopView();
 	views[ VIEW_SIDE ] = SetupSideView();
 }
@@ -360,7 +362,7 @@ void TracePixel( Image<Color>& image, const uint32_t px, const uint32_t py )
 		pixelXY += subPixelOffsets[ s ];
 		vec2d uv = vec2d( pixelXY[ 0 ] / ( RenderWidth - 1.0 ), pixelXY[ 1 ] / ( RenderHeight - 1.0 ) );
 
-		Ray ray = views[ VIEW_CAMERA ].camera.GetViewRay( uv );
+		Ray ray = views[ VIEW_FRONT ].camera.GetViewRay( uv );
 
 		sample = RayTrace_r( ray, 0 );
 		pixelColor += sample.color;
@@ -447,11 +449,11 @@ void TraceScene( Image<Color>& image )
 void RastizeViews()
 {
 #if USE_RASTERIZE
-	RasterScene( colorBuffer, views[ VIEW_CAMERA ], false );
+	RasterScene( colorBuffer, views[ VIEW_FRONT ], false );
 #endif
 
 #if DRAW_WIREFRAME
-	RasterScene( dbg.wireframe, views[ VIEW_CAMERA ] );
+	RasterScene( dbg.wireframe, views[ VIEW_FRONT ] );
 	RasterScene( dbg.topWire, views[ VIEW_TOP ] );
 	RasterScene( dbg.sideWire, views[ VIEW_SIDE ] );
 #endif
@@ -499,7 +501,7 @@ void BuildScene()
 	uint32_t vb = rm.AllocVB();
 	uint32_t ib = rm.AllocIB();
 
-	/*
+	
 	modelIx = LoadModelObj( std::string( "models/teapot.obj" ), vb, ib );
 	if ( modelIx >= 0 )
 	{
@@ -515,7 +517,7 @@ void BuildScene()
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Green, &teapot1, colorMaterial );
 		scene.models.push_back( teapot1 );
 	}
-	*/
+	
 
 	modelIx = LoadModelObj( std::string( "models/sphere.obj" ), vb, ib );
 	if( modelIx >= 0 )
@@ -533,6 +535,7 @@ void BuildScene()
 		scene.models.push_back( sphere1 );
 	}
 
+	/*
 	modelIx = LoadModelObj( std::string( "models/12140_Skull_v3_L2.obj" ), vb, ib );
 	if ( modelIx >= 0 )
 	{
@@ -548,6 +551,7 @@ void BuildScene()
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull1, diffuseMaterial );
 		scene.models.push_back( skull1 );		
 	}
+	*/
 
 	modelIx = CreatePlaneModel( vb, ib, vec2d( 500.0 ), vec2i( 1 ) );
 	if ( modelIx >= 0 )
@@ -688,6 +692,8 @@ int main(void)
 	WriteImage( dbg.wireframe, "output" );
 	WriteImage( dbg.topWire, "output" );
 	WriteImage( dbg.sideWire, "output" );
+
+	WriteImage( zBuffer, "output" );
 
 	std::cout << "Raytrace Finished." << std::endl;
 	return 1;

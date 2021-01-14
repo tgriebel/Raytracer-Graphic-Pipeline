@@ -41,7 +41,7 @@ public:
 
 	T Length() const;
 	Vector< D, T> Normalize() const;
-	Vector< D, T> Reverse();
+	Vector< D, T> Reverse() const;
 	void Zero();
 
 	const T& operator []( const size_t i ) const;
@@ -204,7 +204,7 @@ Vector<D, T> Vector<D, T>::Normalize() const
 
 
 template<size_t D, typename T>
-Vector<D, T> Vector<D, T>::Reverse()
+Vector<D, T> Vector<D, T>::Reverse() const
 {
 	Vector< D, T> v;
 

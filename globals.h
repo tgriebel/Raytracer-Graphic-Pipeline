@@ -12,13 +12,13 @@
 #define USE_SHADOWS		1
 #define USE_RAYTRACE	1
 #define USE_SS4X		1
-#define USE_RASTERIZE	0
-#define DRAW_WIREFRAME	0
+#define USE_RASTERIZE	1
+#define DRAW_WIREFRAME	1
 #define	DRAW_AABB		1
 #define PHONG_NORMALS	1
 // TODO: winding order support
 
-#if 1
+#if 0
 static const uint32_t	RenderWidth			= 1920;
 static const uint32_t	RenderHeight		= 1080;
 #elif 1
@@ -84,9 +84,10 @@ struct debug_t
 
 enum viewType_t
 {
-	VIEW_CAMERA	= 0,
-	VIEW_TOP	= 1,
-	VIEW_SIDE	= 2,
+	VIEW_CAMERA = 0,
+	VIEW_FRONT	= 1,
+	VIEW_TOP	= 2,
+	VIEW_SIDE	= 3,
 };
 
 
