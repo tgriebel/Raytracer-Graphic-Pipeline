@@ -1,10 +1,10 @@
 #pragma once
 
 #include <utility>
-#include "mathVector.h"
-#include "matrix.h"
-#include "color.h"
-#include "meshIO.h"
+#include "../GfxCore/mathVector.h"
+#include "../GfxCore/matrix.h"
+#include "../GfxCore/color.h"
+#include "../GfxCore/meshIO.h"
 #include "aabb.h"
 #include "octree.h"
 #include "ray.h"
@@ -119,7 +119,7 @@ public:
 	uint32_t		ibOffset;
 	uint32_t		vbEnd;
 	uint32_t		ibEnd;
-	material_t		material;
+	objMaterial_t		material;
 };
 
 
@@ -132,7 +132,7 @@ public:
 	uint32_t				modelIx;
 	mat4x4d					transform;
 	vec3d					centroid;
-	material_t				material;
+	objMaterial_t				material;
 
 	void BuildAS()
 	{
@@ -239,5 +239,5 @@ inline bool RayToTriangleIntersection( const Ray& r, const Triangle& tri, bool& 
 uint32_t LoadModel( const std::string& path, const uint32_t vb, const uint32_t ib );
 uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_t ib );
 void StoreModelObj( const std::string& path, const uint32_t modelIx );
-void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const material_t& material );
+void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const objMaterial_t* material = nullptr );
 uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& size, const vec2i& cellCnt );

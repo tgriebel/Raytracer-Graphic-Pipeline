@@ -1,6 +1,6 @@
-#include "bitmap.h"
-#include "mathVector.h"
-#include "matrix.h"
+#include "../GfxCore/bitmap.h"
+#include "../GfxCore/mathVector.h"
+#include "../GfxCore/matrix.h"
 #include "scene.h"
 #include "debug.h"
 #include "globals.h"
@@ -88,6 +88,27 @@ void ImageToBitmap( const Image<float>& image, Bitmap& bitmap )
 
 			const Color c = Color( packed );
 			bitmap.SetPixel( x, y, c.AsR8G8B8A8() );
+		}
+	}
+}
+
+
+void BitmapToImage( const Bitmap& bitmap, Image<Color>& image )
+{
+	image.Clear( Color::Black );
+
+	const uint32_t srcWidth = bitmap.GetWidth();
+	const uint32_t srcHeight = bitmap.GetHeight();
+
+	const uint32_t dstWidth = std::min( srcWidth, image.GetWidth() );
+	const uint32_t dstHeight = std::min( srcHeight, image.GetHeight() );
+
+	for ( int32_t y = 0; y < dstHeight; ++y )
+	{
+		for ( int32_t x = 0; x < dstWidth; ++x )
+		{
+			const uint32_t r8g8b8a8 = bitmap.GetPixel( x, y );
+			image.SetPixel( x, y, Color( r8g8b8a8 ) );
 		}
 	}
 }
@@ -351,6 +372,10 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 							continue;
 
 						const float depth = (float)fragmentInput.clipPosition[ 2 ];
+
+						if ( depth >= zBuffer.GetPixel( x, y ) )
+							continue;
+
 						const vec3d normal = fragmentInput.normal.Normalize();
 
 						const light_t light = scene.lights[ 0 ];
@@ -359,9 +384,7 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 						vec3d lightDir = light.pos - Trunc<4, 1>( fragmentInput.wsPosition );
 						lightDir = lightDir.Normalize();
 
-						const Ray viewRay = view.camera.GetViewRay( vec2d( x / (double)RenderWidth, y / (double)RenderHeight ) );
-
-						const vec3d viewVector = viewRay.GetVector().Reverse();
+						const vec3d viewVector = Trunc<4, 1>( view.camera.origin - fragmentInput.wsPosition ).Normalize();
 						const Color viewDiffuse = Color( (float)Dot( viewVector, normal ) );
 
 						const vec3d halfVector = ( viewVector + lightDir ).Normalize();
@@ -370,9 +393,8 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 
 						if( model.material.textured )
 						{
-							const Bitmap* texture = rm.GetImageRef( 0 );
-							const uint32_t texel = texture->GetPixel( fragmentInput.uv[ 0 ] * texture->GetWidth(), fragmentInput.uv[ 1 ] * texture->GetHeight() );
-							color = texel;
+							const Image<Color>* texture = rm.GetImageRef( model.material.colorMapId );
+							color = texture->GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] );
 						}
 						else
 						{
@@ -386,12 +408,9 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 						const Color shadingColor = ( (float)diffuse * color ) + Color( (float)specularIntensity ) + ambient;
 
 						const Color normalColor = Vec3dToColor( 0.5 * normal + vec3d( 0.5 ) );
-
-						if ( depth < zBuffer.GetPixel( x, y ) )
-						{
-							image.SetPixel( x, y, LinearToSrgb( shadingColor ).AsR8G8B8A8() );
-							zBuffer.SetPixel( x, y, depth );
-						}
+						
+						image.SetPixel( x, y, LinearToSrgb( shadingColor ).AsR8G8B8A8() );
+						zBuffer.SetPixel( x, y, depth );
 					}
 				}
 			}

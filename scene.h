@@ -1,11 +1,11 @@
 #pragma once
 
 #include <vector>
-#include "mathVector.h"
-#include "matrix.h"
+#include "../GfxCore/mathVector.h"
+#include "../GfxCore/matrix.h"
 #include "geom.h"
 #include "camera.h"
-#include "color.h"
+#include "../GfxCore/color.h"
 
 struct light_t
 {

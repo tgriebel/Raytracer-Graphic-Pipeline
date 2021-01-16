@@ -1,9 +1,9 @@
 #pragma once
 
-#include "bitmap.h"
-#include "mathVector.h"
-#include "matrix.h"
-#include "color.h"
+#include "../GfxCore/bitmap.h"
+#include "../GfxCore/mathVector.h"
+#include "../GfxCore/matrix.h"
+#include "../GfxCore/color.h"
 #include "debug.h"
 #include "image.h"
 
@@ -12,7 +12,7 @@
 #define USE_SHADOWS		1
 #define USE_RAYTRACE	1
 #define USE_SS4X		1
-#define USE_RASTERIZE	1
+#define USE_RASTERIZE	0
 #define DRAW_WIREFRAME	1
 #define	DRAW_AABB		1
 #define PHONG_NORMALS	1

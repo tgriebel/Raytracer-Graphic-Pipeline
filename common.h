@@ -3,59 +3,29 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-#include "mathVector.h"
-#include "matrix.h"
-#include "color.h"
+#include "../GfxCore/mathVector.h"
+#include "../GfxCore/matrix.h"
+#include "../GfxCore/color.h"
+#include "../GfxCore/common.h"
 
 // TODO: move
-struct material_t
+struct objMaterial_t
 {
-	double Ka;
-	double Kt;
-	double Kd;
-	double Ks;
-	double Kr;
+	double		Ka;
+	double		Ke;
+	double		Kd;
+	double		Ks;
+	double		Tf;
+	double		Tr;
+	double		Ns;
+	double		Ni;
+	double		d;
+	double		illum;
 
-	bool textured;
+	bool		textured;
+	int32_t		colorMapId;
+	int32_t		normalMapId;
 };
-
-
-template<typename T>
-inline T Clamp( const T& number, const T& min, const T& max )
-{
-	const T tmp = ( number < min ) ? min : number;
-	return ( tmp > max ) ? max : tmp;
-}
-
-
-template<typename T>
-inline T Saturate( const T& number )
-{
-	return Clamp( number, static_cast<T>( 0.0 ), static_cast<T>( 1.0 ) );
-}
-
-
-template<typename T1, typename T2>
-inline T1 Lerp( const T1& v0, const T1& v1, T2 t )
-{
-	t = Saturate( t );
-	T2 one = T2( static_cast<T2>( 1.0 ) );
-	return ( one - t ) * v0 + t * v1;
-}
-
-
-template<typename T>
-inline T Radians( const T& degrees )
-{
-	return ( degrees * ( PI / 180.0 ) );
-}
-
-
-template<typename T>
-inline T Degrees( const T& radians )
-{
-	return ( radians * ( 180.0 / PI ) );
-}
 
 
 inline mat4x4d ComputeRotationX( const double degrees )

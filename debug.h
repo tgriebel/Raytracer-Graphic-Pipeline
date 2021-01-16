@@ -11,11 +11,11 @@
 #include <cstdint>
 #include <tuple>
 #include "common.h"
-#include "bitmap.h"
-#include "color.h"
-#include "mathVector.h"
-#include "matrix.h"
-#include "meshIO.h"
+#include "../GfxCore/bitmap.h"
+#include "../GfxCore/color.h"
+#include "../GfxCore/mathVector.h"
+#include "../GfxCore/matrix.h"
+#include "../GfxCore/meshIO.h"
 #include "rasterLib.h"
 #include "geom.h"
 #include "resourceManager.h"

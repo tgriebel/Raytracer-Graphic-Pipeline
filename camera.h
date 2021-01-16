@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "mathVector.h"
+#include "../GfxCore/mathVector.h"
 #include "geom.h"
 
 class Camera

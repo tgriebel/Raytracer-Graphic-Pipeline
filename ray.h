@@ -1,8 +1,8 @@
 #pragma once
 
 #include <utility>
-#include "mathVector.h"
-#include "matrix.h"
+#include "../GfxCore/mathVector.h"
+#include "../GfxCore/matrix.h"
 #include "common.h"
 
 struct Ray

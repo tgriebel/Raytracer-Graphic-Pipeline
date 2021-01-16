@@ -12,11 +12,11 @@
 #include <map>
 #include <thread>
 #include "common.h"
-#include "bitmap.h"
-#include "color.h"
-#include "mathVector.h"
-#include "matrix.h"
-#include "meshIO.h"
+#include "../GfxCore/bitmap.h"
+#include "../GfxCore/color.h"
+#include "../GfxCore/mathVector.h"
+#include "../GfxCore/matrix.h"
+#include "../GfxCore/meshIO.h"
 #include "rasterLib.h"
 #include "geom.h"
 #include "resourceManager.h"
@@ -29,9 +29,9 @@
 
 ResourceManager	rm;
 
-material_t mirrorMaterial = { 0.3, 1.0, 0.0, 1.0, 1.0, false };
-material_t diffuseMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, true };
-material_t colorMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, false };
+objMaterial_t mirrorMaterial = { 0.3, 1.0, 0.0, 1.0, 1.0, false };
+objMaterial_t diffuseMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, true };
+objMaterial_t colorMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, false };
 
 Scene			scene;
 SceneView		views[4];
@@ -45,6 +45,7 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 
 void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap );
 void ImageToBitmap( const Image<float>& image, Bitmap& bitmap );
+void BitmapToImage( const Bitmap& bitmap, Image<Color>& image );
 
 static Color skyColor = Color::Blue;
 
@@ -70,7 +71,8 @@ sample_t RecordSkyInfo( const Ray& r, const double t )
 
 sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triIndex, const uint32_t modelIx )
 {
-	const std::vector<Triangle>& triCache = scene.models[ modelIx ].triCache;
+	const ModelInstance& model = scene.models[ modelIx ];
+	const std::vector<Triangle>& triCache = model.triCache;
 	const Triangle& tri = triCache[ triIndex ];
 
 	sample_t sample;
@@ -92,12 +94,14 @@ sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triInde
 	vec4d mixedColor = b[ 0 ] * color0 + b[ 1 ] * color1 + b[ 2 ] * color2;
 	sample.color = Vec4dToColor( mixedColor );
 
-	const Bitmap* texture = rm.GetImageRef( 0 );
-	vec2d uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
-	const uint32_t texel = texture->GetPixel( uv[ 0 ] * texture->GetWidth(), uv[ 1 ] * texture->GetHeight() );
+	sample.albedo = sample.color;
+	if( model.material.textured )
+	{
+		const Image<Color>* texture = rm.GetImageRef( model.material.colorMapId );
+		vec2d uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
+		sample.albedo = texture->GetPixel( uv[ 0 ] * texture->GetWidth(), uv[ 1 ] * texture->GetHeight() );
+	}
 	
-	sample.albedo = Color( texel );
-
 	sample.surfaceDot = Dot( r.GetVector(), sample.normal );
 	if ( sample.surfaceDot > 0.0 )
 	{
@@ -194,7 +198,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 	else
 	{
 		Color finalColor = Color::Black;
-		const material_t& material = scene.models[ surfaceSample.modelIx ].material;
+		const objMaterial_t& material = scene.models[ surfaceSample.modelIx ].material;
 		Color surfaceColor = material.textured ? surfaceSample.albedo : surfaceSample.color;		
 
 		vec3d viewVector = ray.GetVector().Reverse();
@@ -202,7 +206,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 
 		Color relfectionColor = Color::Black;
 #if USE_RELFECTION
-		if ( ( rayDepth < MaxBounces ) && ( material.Kr > 0.0 ) )
+		if ( ( rayDepth < MaxBounces ) && ( material.Tr > 0.0 ) )
 		{
 			const vec3d reflectVector = 2.0 * Dot( viewVector, surfaceSample.normal ) * surfaceSample.normal - viewVector;
 
@@ -211,7 +215,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 			reflectionRay.maxt = DBL_MAX;//std::max( 0.0, reflectionVector.t - reflectionVector.mint );
 
 			const sample_t reflectSample = RayTrace_r( reflectionRay, rayDepth + 1 );
-			relfectionColor = material.Kr * reflectSample.color;
+			relfectionColor = material.Tr * reflectSample.color;
 
 			sample = surfaceSample;
 			sample.color = relfectionColor;
@@ -495,13 +499,35 @@ mat4x4d BuildModelMatrix( const vec3d& origin, const vec3d& degressZYZ, const do
 }
 
 
+void CreateMaterials()
+{
+	mirrorMaterial.Ka = 0.1;
+	mirrorMaterial.Kd = 0.1;
+	mirrorMaterial.Ks = 1.0;
+	mirrorMaterial.Ke = 1.0;
+	mirrorMaterial.Tr = 1.0f;
+
+	diffuseMaterial.Ka = 1.0;
+	diffuseMaterial.Kd = 1.0;
+	diffuseMaterial.Ks = 1.0;
+	diffuseMaterial.Ke = 1.0;
+	diffuseMaterial.Tr = 0.0f;
+
+	colorMaterial.Ka = 1.0;
+	colorMaterial.Kd = 1.0;
+	colorMaterial.Ks = 1.0;
+	colorMaterial.Ke = 1.0;
+	colorMaterial.Tr = 0.0f;
+}
+
+
 void BuildScene()
 {
 	uint32_t modelIx;
 	uint32_t vb = rm.AllocVB();
 	uint32_t ib = rm.AllocIB();
 
-	
+	/*
 	modelIx = LoadModelObj( std::string( "models/teapot.obj" ), vb, ib );
 	if ( modelIx >= 0 )
 	{
@@ -517,7 +543,7 @@ void BuildScene()
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Green, &teapot1, colorMaterial );
 		scene.models.push_back( teapot1 );
 	}
-	
+	*/
 
 	modelIx = LoadModelObj( std::string( "models/sphere.obj" ), vb, ib );
 	if( modelIx >= 0 )
@@ -526,16 +552,15 @@ void BuildScene()
 
 		ModelInstance sphere0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 40.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.8, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::White, &sphere0, mirrorMaterial );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::White, &sphere0, &mirrorMaterial );
 		scene.models.push_back( sphere0 );
 
 		ModelInstance sphere1;
 		modelMatrix = BuildModelMatrix( vec3d( -50.0, -10.0, 10.0 ), vec3d( 0.0, 0.0, 0.0 ), .3, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Red, &sphere1, colorMaterial );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Red, &sphere1 );
 		scene.models.push_back( sphere1 );
 	}
 
-	/*
 	modelIx = LoadModelObj( std::string( "models/12140_Skull_v3_L2.obj" ), vb, ib );
 	if ( modelIx >= 0 )
 	{
@@ -543,15 +568,14 @@ void BuildScene()
 
 		ModelInstance skull0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 10.0 ), vec3d( 0.0, 90.0, 40.0 ), 4.0, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull0, mirrorMaterial );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull0, &mirrorMaterial );
 		scene.models.push_back( skull0 );
 
 		ModelInstance skull1;
 		modelMatrix = BuildModelMatrix( vec3d( -30.0, -120.0, -10.0 ), vec3d( 0.0, 90.0, 0.0 ), 5.0, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull1, diffuseMaterial );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull1 );
 		scene.models.push_back( skull1 );		
 	}
-	*/
 
 	modelIx = CreatePlaneModel( vb, ib, vec2d( 500.0 ), vec2i( 1 ) );
 	if ( modelIx >= 0 )
@@ -560,7 +584,7 @@ void BuildScene()
 
 		ModelInstance plane0;
 		modelMatrix = BuildModelMatrix( vec3d( 0.0, 0.0, -10.0 ), vec3d( 0.0, 0.0, 0.0 ), 1.0, RHS_XYZ );
-		CreateModelInstance( modelIx, modelMatrix, false, Color::White, &plane0, mirrorMaterial );
+		CreateModelInstance( modelIx, modelMatrix, false, Color::White, &plane0, &mirrorMaterial );
 		scene.models.push_back( plane0 );
 	}
 
@@ -587,12 +611,6 @@ void BuildScene()
 		ModelInstance& model = scene.models[ m ];
 		scene.aabb.Expand( model.octree.GetAABB().min );
 		scene.aabb.Expand( model.octree.GetAABB().max );
-	}
-
-	// Textures
-	{
-		Bitmap skullTexture = Bitmap( "textures/Skull.bmp" );
-		rm.StoreImageCopy( skullTexture );
 	}
 }
 
@@ -646,6 +664,8 @@ int main(void)
 	std::cout << "Running Raytracer/Rasterizer" << std::endl;
 
 	Timer loadTimer;
+
+	CreateMaterials();
 
 	loadTimer.Start();
 	BuildScene();

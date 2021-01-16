@@ -1,8 +1,14 @@
 #include <map>
 #include <deque>
+#include <string>
+#include <sstream>
 
 #include "geom.h"
 #include "resourceManager.h"
+#include "..\GfxCore\bitmap.h"
+#include "image.h"
+
+void BitmapToImage( const Bitmap& bitmap, Image<Color>& image );
 
 extern ResourceManager rm;
 
@@ -44,10 +50,10 @@ uint32_t LoadModel( const std::string& path, const uint32_t vb, const uint32_t i
 	model->ibEnd = rm.GetIbOffset( ib );
 
 	model->material.Ka = 1.0;
-	model->material.Kt = 0.5;
+	model->material.Tf = 0.5;
 	model->material.Kd = 0.5;
 	model->material.Ks = 1.0;
-	model->material.Kr = 0.4;
+	model->material.Tr = 0.4;
 
 	return modelIx;
 }
@@ -196,13 +202,34 @@ uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_
 	}
 
 	// Set material
+	assert( objMesh.materialLibs.size() <= 1 ); // Just assume 1 material for now
+	if( objMesh.materialLibs.size() > 0 )
 	{
-		model->material.Ka = 1.0;
-		model->material.Kt = 1.0;
-		model->material.Kd = 1.0;
-		model->material.Ks = 1.0;
-		model->material.Kr = 1.0;
+		std::string& matLib = objMesh.materialLibs[ 0 ];
+
+		MeshIO::objMaterial_t material;
+		MeshIO::ReadMtl( std::string( "models/" + matLib ), material );
+
+		model->material.Ni = material.Ni;
+		model->material.Ns = material.Ns;
+		model->material.Ka = material.Ka.x;	
+		model->material.Ke = material.Ke.x;
+		model->material.Kd = material.Kd.x;
+		model->material.Ks = material.Ks.x;
+		model->material.Tf = material.Tf.x;
+		model->material.Tr = material.Tr;
+		model->material.illum = material.illum;
 		model->material.textured = false;
+
+		if( material.map_Kd.size() > 0 )
+		{
+			Bitmap texture = Bitmap( std::string( "textures/" + material.map_Kd ) );
+
+			Image<Color> image = Image<Color>( texture.GetWidth(), texture.GetHeight(), Color( 0.0f ), material.map_Kd.c_str() );
+			BitmapToImage( texture, image );
+			model->material.colorMapId = rm.StoreImageCopy( image );
+			model->material.textured = true;
+		}
 	}
 
 	// MeshIO::WriteObj( std::string( "models/teapot-outtest.obj" ), objMesh );
@@ -272,7 +299,7 @@ void StoreModelObj( const std::string& path, const uint32_t modelIx )
 }
 
 
-void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const material_t& material )
+void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const objMaterial_t* material )
 {
 	const Model* model = rm.GetModel( modelIx );
 
@@ -381,7 +408,14 @@ void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, co
 		outInstance->triCache.push_back( Triangle( v0, v1, v2 ) );
 	}
 
-	outInstance->material = material;
+	if( material == nullptr )
+	{
+		outInstance->material = model->material;
+	}
+	else
+	{
+		outInstance->material = *material;
+	}
 
 	outInstance->BuildAS();
 }
@@ -449,10 +483,10 @@ uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& si
 	// Set material
 	{
 		model->material.Ka = 1.0;
-		model->material.Kt = 1.0;
+		model->material.Tf = 1.0;
 		model->material.Kd = 1.0;
 		model->material.Ks = 1.0;
-		model->material.Kr = 1.0;
+		model->material.Tr = 1.0;
 		model->material.textured = false;
 	}
 

@@ -98,6 +98,26 @@ public:
 		return buffer[ index ];
 	}
 
+	bool SetPixelUV( float u, float v, const T& pixel ) const
+	{
+		WrapUV( u, v );
+
+		const uint32_t x = static_cast<uint32_t>( u * GetWidth() );
+		const uint32_t y = static_cast<uint32_t>( v * GetWidth() );
+
+		return SetPixel( x, y, pixel );
+	}
+
+	T GetPixelUV( float u, float v ) const
+	{
+		WrapUV( u, v );
+
+		const uint32_t x = static_cast<uint32_t>( u * GetWidth() );
+		const uint32_t y = static_cast<uint32_t>( v * GetHeight() );
+
+		return GetPixel( x, y );
+	}
+
 	void Clear( const T& fill )
 	{
 		for ( uint32_t i = 0; i < length; ++i )
@@ -129,6 +149,15 @@ public:
 	inline const char* GetName() const
 	{
 		return name;
+	}
+
+	static void WrapUV( float& u, float& v )
+	{
+		u = ( u > 1.0 ) ? ( u - floor( u ) ) : u;
+		v = ( v > 1.0 ) ? ( v - floor( v ) ) : v;
+
+		u = Saturate( u );
+		v = Saturate( v );
 	}
 
 private:

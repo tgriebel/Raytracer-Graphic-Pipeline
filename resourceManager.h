@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <vector>
 #include "geom.h"
-#include "bitmap.h"
+#include "image.h"
 
 class ResourceManager
 {
@@ -11,7 +11,7 @@ private:
 	std::vector<vertexBuffer_t>	vertexBuffers;
 	std::vector<indexBuffer_t>	indexBuffers;
 	std::vector<Model>			modelBuffer;
-	std::vector<Bitmap>			imageBuffer; // TODO: use image class instead of bitmap
+	std::vector< Image<Color> >	imageBuffer; // TODO: use image class instead of bitmap
 public:
 
 	ResourceManager()
@@ -45,7 +45,7 @@ public:
 		return static_cast<uint32_t>( modelBuffer.size() - 1 );
 	}
 
-	uint32_t StoreImageCopy( const Bitmap& image )
+	uint32_t StoreImageCopy( const Image<Color>& image )
 	{
 		imageBuffer.push_back( image );
 		return static_cast<uint32_t>( imageBuffer.size() - 1 );
@@ -118,7 +118,7 @@ public:
 		return &modelBuffer[ modelIx ];
 	}
 
-	const Bitmap* GetImageRef( const uint32_t imageIx ) const
+	const Image<Color>* GetImageRef( const uint32_t imageIx ) const
 	{
 		if ( imageIx >= imageBuffer.size() )
 		{
