@@ -299,7 +299,7 @@ void StoreModelObj( const std::string& path, const uint32_t modelIx )
 }
 
 
-void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const objMaterial_t* material )
+void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const material_t* material )
 {
 	const Model* model = rm.GetModel( modelIx );
 

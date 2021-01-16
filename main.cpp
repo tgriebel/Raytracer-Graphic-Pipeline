@@ -29,9 +29,9 @@
 
 ResourceManager	rm;
 
-objMaterial_t mirrorMaterial = { 0.3, 1.0, 0.0, 1.0, 1.0, false };
-objMaterial_t diffuseMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, true };
-objMaterial_t colorMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, false };
+material_t mirrorMaterial = { 0.3, 1.0, 0.0, 1.0, 1.0, false };
+material_t diffuseMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, true };
+material_t colorMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, false };
 
 Scene			scene;
 SceneView		views[4];
@@ -198,7 +198,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 	else
 	{
 		Color finalColor = Color::Black;
-		const objMaterial_t& material = scene.models[ surfaceSample.modelIx ].material;
+		const material_t& material = scene.models[ surfaceSample.modelIx ].material;
 		Color surfaceColor = material.textured ? surfaceSample.albedo : surfaceSample.color;		
 
 		vec3d viewVector = ray.GetVector().Reverse();

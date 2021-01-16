@@ -5,9 +5,10 @@
 #include "../GfxCore/matrix.h"
 #include "../GfxCore/color.h"
 #include "../GfxCore/meshIO.h"
-#include "aabb.h"
+#include "../GfxCore/aabb.h"
+#include "../GfxCore/ray.h"
 #include "octree.h"
-#include "ray.h"
+#include "common.h"
 
 struct plane_t
 {
@@ -119,7 +120,7 @@ public:
 	uint32_t		ibOffset;
 	uint32_t		vbEnd;
 	uint32_t		ibEnd;
-	objMaterial_t		material;
+	material_t		material;
 };
 
 
@@ -132,7 +133,7 @@ public:
 	uint32_t				modelIx;
 	mat4x4d					transform;
 	vec3d					centroid;
-	objMaterial_t				material;
+	material_t				material;
 
 	void BuildAS()
 	{
@@ -239,5 +240,5 @@ inline bool RayToTriangleIntersection( const Ray& r, const Triangle& tri, bool& 
 uint32_t LoadModel( const std::string& path, const uint32_t vb, const uint32_t ib );
 uint32_t LoadModelObj( const std::string& path, const uint32_t vb, const uint32_t ib );
 void StoreModelObj( const std::string& path, const uint32_t modelIx );
-void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const objMaterial_t* material = nullptr );
+void CreateModelInstance( const uint32_t modelIx, const mat4x4d& modelMatrix, const bool smoothNormals, const Color& tint, ModelInstance* outInstance, const material_t* material = nullptr );
 uint32_t CreatePlaneModel( const uint32_t vb, const uint32_t ib, const vec2d& size, const vec2i& cellCnt );

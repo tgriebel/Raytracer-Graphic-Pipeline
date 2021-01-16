@@ -9,7 +9,7 @@
 #include "../GfxCore/common.h"
 
 // TODO: move
-struct objMaterial_t
+struct material_t
 {
 	double		Ka;
 	double		Ke;

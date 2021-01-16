@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "geom.h"
-#include "ray.h"
+#include "../GfxCore/ray.h"
 
 enum octreeRegion_t : uint8_t
 {
