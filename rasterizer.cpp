@@ -178,7 +178,7 @@ void DrawWorldAxis( Image<Color>& image, const SceneView& view, double size, con
 void DrawWorldPoint( Image<Color>& image, const SceneView& view, const vec4d& point, const int32_t size, const Color& color )
 {
 	vec4d projPt;
-	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), point, projPt );
+	ProjectPoint( view.projView, view.targetSize, point, projPt );
 
 	vec2i ssPt = vec2i( static_cast<int32_t>( projPt[ 0 ] ), static_cast<int32_t>( projPt[ 1 ] ) );
 	vec2d halfPt = vec2d( 0.5 * ( (double)size + 0.5 ) );
@@ -206,8 +206,8 @@ void DrawRay( Image<Color>& image, const SceneView& view, const Ray& ray, const 
 	vec4d wsPt[ 2 ];
 	wsPt[ 0 ] = vec4d( ray.o, 1.0 );
 	wsPt[ 1 ] = vec4d( ray.GetEndPoint(), 1.0 );
-	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), wsPt[ 0 ], ssPt[ 0 ] );
-	ProjectPoint( view.projView, vec2i( RenderWidth, RenderHeight ), wsPt[ 1 ], ssPt[ 1 ] );
+	ProjectPoint( view.projView, view.targetSize, wsPt[ 0 ], ssPt[ 0 ] );
+	ProjectPoint( view.projView, view.targetSize, wsPt[ 1 ], ssPt[ 1 ] );
 	DrawLine( image, (int)ssPt[ 0 ][ 0 ], (int)ssPt[ 0 ][ 1 ], (int)ssPt[ 1 ][ 0 ], (int)ssPt[ 1 ][ 1 ], color.AsR8G8B8A8() );
 }
 

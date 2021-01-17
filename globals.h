@@ -21,7 +21,7 @@
 #if 0
 static const uint32_t	RenderWidth			= 1920;
 static const uint32_t	RenderHeight		= 1080;
-#elif 0
+#elif 1
 static const uint32_t	RenderWidth			= 720;
 static const uint32_t	RenderHeight		= 480;
 #elif 1
@@ -30,7 +30,6 @@ static const uint32_t	RenderHeight		= 120;
 #endif
 static const double		HalfRenderWidth		= ( RenderWidth * 0.5 );
 static const double		HalfRenderHeight	= ( RenderHeight * 0.5 );
-static const double		AspectRatio			= RenderWidth / static_cast<double>( RenderHeight );
 static const double		CameraFov			= 90.0f;
 static const double		CameraNearPlane		= 0.1f;
 static const double		CameraFarPlane		= 1000.0f;
@@ -89,6 +88,12 @@ enum viewType_t
 	VIEW_TOP	= 2,
 	VIEW_SIDE	= 3,
 };
+
+
+inline double AspectRatio( const vec2i& targetSize )
+{
+	return ( targetSize[ 0 ] / static_cast<double>( targetSize[ 1 ] ) );
+}
 
 
 inline Color Vec3dToColor( const vec3d& v )

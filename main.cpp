@@ -29,9 +29,9 @@
 
 ResourceManager	rm;
 
-material_t mirrorMaterial = { 0.3, 1.0, 0.0, 1.0, 1.0, false };
-material_t diffuseMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, true };
-material_t colorMaterial = { 1.0, 1.0, 1.0, 1.0, 0.0, false };
+material_t mirrorMaterial;
+material_t diffuseMaterial;
+material_t colorMaterial;
 
 Scene			scene;
 SceneView		views[4];
@@ -274,12 +274,13 @@ SceneView SetupFrontView()
 {
 	SceneView view;
 
+	view.targetSize = RenderSize;
 	view.camera = Camera(	vec4d( -280.0, -30.0, 50.0, 0.0 ),
 							vec4d( 0.0, -1.0, 0.0, 0.0 ),
 							vec4d( 0.0, 0.0, -1.0, 0.0 ),
 							vec4d( -1.0, 0.0, 0.0, 0.0 ),
 							CameraFov,
-							AspectRatio,
+							AspectRatio( view.targetSize ),
 							CameraNearPlane,
 							CameraFarPlane );
 
@@ -295,12 +296,13 @@ SceneView SetupTopView()
 {
 	SceneView view;
 
+	view.targetSize = RenderSize;
 	view.camera = Camera(	vec4d( 0.0, 0.0, 280.0, 0.0 ),
 							vec4d( 0.0, -1.0, 0.0, 0.0 ),
 							vec4d( -1.0, 0.0, 0.0, 0.0 ),
 							vec4d( 0.0, 0.0, 1.0, 0.0 ),
 							CameraFov,
-							AspectRatio,
+							AspectRatio( view.targetSize ),
 							CameraNearPlane,
 							CameraFarPlane );
 
@@ -316,12 +318,13 @@ SceneView SetupSideView()
 {
 	SceneView view;
 
+	view.targetSize = RenderSize;
 	view.camera = Camera(	vec4d( 0.0, 280.0, 0.0, 0.0 ),
 							vec4d( -1.0, 0.0, 0.0, 0.0 ),
 							vec4d( 0.0, 0.0, -1.0, 0.0 ),
 							vec4d( 0.0, 1.0, 0.0, 0.0 ),
 							CameraFov,
-							AspectRatio,
+							AspectRatio( view.targetSize ),
 							CameraNearPlane,
 							CameraFarPlane );
 
@@ -335,13 +338,14 @@ SceneView SetupSideView()
 
 void SetupViews()
 {
+	views[ VIEW_CAMERA ] = SetupFrontView();
 	views[ VIEW_FRONT ] = SetupFrontView();
 	views[ VIEW_TOP ] = SetupTopView();
 	views[ VIEW_SIDE ] = SetupSideView();
 }
 
 
-void TracePixel( Image<Color>& image, const uint32_t px, const uint32_t py )
+void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, const uint32_t py )
 {
 #if USE_SS4X
 	static const uint32_t subSampleCnt = 4;
@@ -364,7 +368,7 @@ void TracePixel( Image<Color>& image, const uint32_t px, const uint32_t py )
 	{
 		vec2d pixelXY = vec2d( static_cast<double>( px ), static_cast<double>( py ) );
 		pixelXY += subPixelOffsets[ s ];
-		vec2d uv = vec2d( pixelXY[ 0 ] / ( RenderWidth - 1.0 ), pixelXY[ 1 ] / ( RenderHeight - 1.0 ) );
+		vec2d uv = vec2d( pixelXY[ 0 ] / ( view.targetSize[ 0 ] - 1.0 ), pixelXY[ 1 ] / ( view.targetSize[ 1 ] - 1.0 ) );
 
 		Ray ray = views[ VIEW_FRONT ].camera.GetViewRay( uv );
 
@@ -402,7 +406,7 @@ void TracePixel( Image<Color>& image, const uint32_t px, const uint32_t py )
 }
 
 
-void TracePatch( Image<Color>* image, const vec2i& p0, const vec2i& p1 )
+void TracePatch( const SceneView& view, Image<Color>* image, const vec2i& p0, const vec2i& p1 )
 {
 	const int32_t x0 = p0[ 0 ];
 	const int32_t y0 = p0[ 1 ];
@@ -419,13 +423,13 @@ void TracePatch( Image<Color>* image, const vec2i& p0, const vec2i& p1 )
 			if ( px >= image->GetWidth() )
 				return;
 
-			TracePixel( *image, px, py );
+			TracePixel( view, *image, px, py );
 		}
 	}
 }
 
 
-void TraceScene( Image<Color>& image )
+void TraceScene( const SceneView& view, Image<Color>& image )
 {
 #if USE_RAYTRACE
 
@@ -433,12 +437,19 @@ void TraceScene( Image<Color>& image )
 	uint32_t threadsComplete = 0;
 	std::vector<std::thread> threads;
 
+	uint32_t renderWidth = view.targetSize[ 0 ];
+	uint32_t renderHeight = view.targetSize[ 1 ];
+
 	const uint32_t patchSize = 120;
-	for ( uint32_t py = 0; py < RenderHeight; py += patchSize )
+	for ( uint32_t py = 0; py < renderHeight; py += patchSize )
 	{
-		for ( uint32_t px = 0; px < RenderWidth; px += patchSize )
+		for ( uint32_t px = 0; px < renderWidth; px += patchSize )
 		{
-			threads.push_back( std::thread( TracePatch, &image, vec2i( px, py ), vec2i( px + patchSize, py + patchSize ) ) );
+			vec2i patch;
+			patch[ 0 ] = Clamp( px + patchSize, px, renderWidth );
+			patch[ 1 ] = Clamp( py + patchSize, py, renderHeight );
+
+			threads.push_back( std::thread( TracePatch, view, &image, vec2i( px, py ), patch ) );
 			++threadsLaunched;
 		}
 	}
@@ -699,7 +710,7 @@ int main(void)
 		Timer traceTimer;
 
 		traceTimer.Start();
-		TraceScene( frameBuffer );
+		TraceScene( views[ VIEW_CAMERA ], frameBuffer );
 		traceTimer.Stop();
 
 		RastizeViews();
