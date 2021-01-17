@@ -4,8 +4,8 @@
 #include "../GfxCore/mathVector.h"
 #include "../GfxCore/matrix.h"
 #include "../GfxCore/color.h"
+#include "../GfxCore/image.h"
 #include "debug.h"
-#include "image.h"
 
 #define USE_AABB		1
 #define USE_RELFECTION	1
@@ -21,7 +21,7 @@
 #if 0
 static const uint32_t	RenderWidth			= 1920;
 static const uint32_t	RenderHeight		= 1080;
-#elif 1
+#elif 0
 static const uint32_t	RenderWidth			= 720;
 static const uint32_t	RenderHeight		= 480;
 #elif 1

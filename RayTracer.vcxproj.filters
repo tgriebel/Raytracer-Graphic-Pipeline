@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="geom.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -26,21 +23,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="geom.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="rasterLib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resourceManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -50,16 +32,7 @@
     <ClInclude Include="globals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="image.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="octree.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="timer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -88,8 +61,14 @@
     <Resource Include="models\sphere3.obj">
       <Filter>Resource Files</Filter>
     </Resource>
-    <Resource Include="models\12140_Skull_v3_L2.obj" />
-    <Resource Include="models\sphere-outtest.obj" />
-    <Resource Include="models\teapot-outtest.obj" />
+    <Resource Include="models\12140_Skull_v3_L2.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\sphere-outtest.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
+    <Resource Include="models\teapot-outtest.obj">
+      <Filter>Resource Files</Filter>
+    </Resource>
   </ItemGroup>
 </Project>

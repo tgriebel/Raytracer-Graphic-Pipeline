@@ -10,13 +10,12 @@
 #include <float.h>
 #include <cstdint>
 #include <tuple>
-#include "common.h"
 #include "../GfxCore/bitmap.h"
 #include "../GfxCore/color.h"
 #include "../GfxCore/mathVector.h"
 #include "../GfxCore/matrix.h"
 #include "../GfxCore/meshIO.h"
-#include "rasterLib.h"
-#include "geom.h"
-#include "resourceManager.h"
-#include "camera.h"
+#include "../GfxCore/rasterLib.h"
+#include "../GfxCore/geom.h"
+#include "../GfxCore/resourceManager.h"
+#include "../GfxCore/camera.h"

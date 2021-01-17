@@ -11,20 +11,20 @@
 #include <tuple>
 #include <map>
 #include <thread>
-#include "common.h"
 #include "../GfxCore/bitmap.h"
 #include "../GfxCore/color.h"
 #include "../GfxCore/mathVector.h"
 #include "../GfxCore/matrix.h"
 #include "../GfxCore/meshIO.h"
-#include "rasterLib.h"
-#include "geom.h"
-#include "resourceManager.h"
-#include "camera.h"
+#include "../GfxCore/geom.h"
+#include "../GfxCore/resourceManager.h"
+#include "../GfxCore/camera.h"
+#include "../GfxCore/image.h"
+#include "../GfxCore/rasterLib.h"
+#include "../GfxCore/util.h"
 #include "scene.h"
 #include "debug.h"
 #include "globals.h"
-#include "image.h"
 #include "timer.h"
 
 ResourceManager	rm;
@@ -429,6 +429,8 @@ void TraceScene( Image<Color>& image )
 {
 #if USE_RAYTRACE
 
+	uint32_t threadsLaunched = 0;
+	uint32_t threadsComplete = 0;
 	std::vector<std::thread> threads;
 
 	const uint32_t patchSize = 120;
@@ -437,15 +439,16 @@ void TraceScene( Image<Color>& image )
 		for ( uint32_t px = 0; px < RenderWidth; px += patchSize )
 		{
 			threads.push_back( std::thread( TracePatch, &image, vec2i( px, py ), vec2i( px + patchSize, py + patchSize ) ) );
+			++threadsLaunched;
 		}
 	}
 
 	for ( auto& thread : threads )
 	{
-		thread.join();
+		thread.join(); // TODO: replace with non-blocking call for better messaging
+		++threadsComplete;
+		std::cout << static_cast<int>( 100.0 * ( threadsComplete / (double)threadsLaunched ) ) << "% ";
 	}
-
-//	std::cout << static_cast<int>( 100.0 * ( py / (double) image.GetHeight() ) ) << "% ";
 #endif
 }
 
@@ -545,46 +548,49 @@ void BuildScene()
 	}
 	*/
 
-	modelIx = LoadModelObj( std::string( "models/sphere.obj" ), vb, ib );
+	rm.PushVB( vb );
+	rm.PushIB( ib );
+
+	modelIx = LoadModelObj( std::string( "models/sphere.obj" ), rm );
 	if( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
 
 		ModelInstance sphere0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 40.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.8, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::White, &sphere0, &mirrorMaterial );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &sphere0, &mirrorMaterial );
 		scene.models.push_back( sphere0 );
 
 		ModelInstance sphere1;
-		modelMatrix = BuildModelMatrix( vec3d( -50.0, -10.0, 10.0 ), vec3d( 0.0, 0.0, 0.0 ), .3, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Red, &sphere1 );
+		modelMatrix = BuildModelMatrix( vec3d( -50.0, -10.0, 10.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.3, RHS_XZY );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Red, &sphere1 );
 		scene.models.push_back( sphere1 );
 	}
 
-	modelIx = LoadModelObj( std::string( "models/12140_Skull_v3_L2.obj" ), vb, ib );
+	modelIx = LoadModelBin( std::string( "models/skull.mdl" ), rm );
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
 
 		ModelInstance skull0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 10.0 ), vec3d( 0.0, 90.0, 40.0 ), 4.0, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull0, &mirrorMaterial );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Gold, &skull0, &mirrorMaterial );
 		scene.models.push_back( skull0 );
 
 		ModelInstance skull1;
 		modelMatrix = BuildModelMatrix( vec3d( -30.0, -120.0, -10.0 ), vec3d( 0.0, 90.0, 0.0 ), 5.0, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Gold, &skull1 );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Gold, &skull1 );
 		scene.models.push_back( skull1 );		
 	}
 
-	modelIx = CreatePlaneModel( vb, ib, vec2d( 500.0 ), vec2i( 1 ) );
+	modelIx = CreatePlaneModel( rm, vec2d( 500.0 ), vec2i( 1 ) );
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
 
 		ModelInstance plane0;
 		modelMatrix = BuildModelMatrix( vec3d( 0.0, 0.0, -10.0 ), vec3d( 0.0, 0.0, 0.0 ), 1.0, RHS_XYZ );
-		CreateModelInstance( modelIx, modelMatrix, false, Color::White, &plane0, &mirrorMaterial );
+		CreateModelInstance( rm, modelIx, modelMatrix, false, Color::White, &plane0, &mirrorMaterial );
 		scene.models.push_back( plane0 );
 	}
 

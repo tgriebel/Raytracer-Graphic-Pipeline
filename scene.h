@@ -3,9 +3,9 @@
 #include <vector>
 #include "../GfxCore/mathVector.h"
 #include "../GfxCore/matrix.h"
-#include "geom.h"
-#include "camera.h"
+#include "../GfxCore/camera.h"
 #include "../GfxCore/color.h"
+#include "../GfxCore/geom.h"
 
 struct light_t
 {

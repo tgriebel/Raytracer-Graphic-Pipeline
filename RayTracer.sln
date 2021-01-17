@@ -10,6 +10,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracer", "RayTracer.vcxp
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Converter", "..\Converter\Converter.vcxproj", "{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3DE9A00C-B04B-43AB-943D-1973C47DECE3} = {3DE9A00C-B04B-43AB-943D-1973C47DECE3}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GfxCore", "..\GfxCore\GfxCore.vcxproj", "{3DE9A00C-B04B-43AB-943D-1973C47DECE3}"
 EndProject

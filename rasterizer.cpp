@@ -1,12 +1,12 @@
 #include "../GfxCore/bitmap.h"
 #include "../GfxCore/mathVector.h"
 #include "../GfxCore/matrix.h"
+#include "../GfxCore/image.h"
 #include "scene.h"
 #include "debug.h"
 #include "globals.h"
-#include "image.h"
-#include "resourceManager.h"
-#include "octree.h"
+#include "../GfxCore/resourceManager.h"
+#include "../GfxCore/octree.h"
 
 Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
 
@@ -88,27 +88,6 @@ void ImageToBitmap( const Image<float>& image, Bitmap& bitmap )
 
 			const Color c = Color( packed );
 			bitmap.SetPixel( x, y, c.AsR8G8B8A8() );
-		}
-	}
-}
-
-
-void BitmapToImage( const Bitmap& bitmap, Image<Color>& image )
-{
-	image.Clear( Color::Black );
-
-	const uint32_t srcWidth = bitmap.GetWidth();
-	const uint32_t srcHeight = bitmap.GetHeight();
-
-	const uint32_t dstWidth = std::min( srcWidth, image.GetWidth() );
-	const uint32_t dstHeight = std::min( srcHeight, image.GetHeight() );
-
-	for ( int32_t y = 0; y < dstHeight; ++y )
-	{
-		for ( int32_t x = 0; x < dstWidth; ++x )
-		{
-			const uint32_t r8g8b8a8 = bitmap.GetPixel( x, y );
-			image.SetPixel( x, y, Color( r8g8b8a8 ) );
 		}
 	}
 }
