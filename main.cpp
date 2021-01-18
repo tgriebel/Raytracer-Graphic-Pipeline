@@ -370,7 +370,7 @@ void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, 
 		pixelXY += subPixelOffsets[ s ];
 		vec2d uv = vec2d( pixelXY[ 0 ] / ( view.targetSize[ 0 ] - 1.0 ), pixelXY[ 1 ] / ( view.targetSize[ 1 ] - 1.0 ) );
 
-		Ray ray = views[ VIEW_FRONT ].camera.GetViewRay( uv );
+		Ray ray = view.camera.GetViewRay( uv );
 
 		sample = RayTrace_r( ray, 0 );
 		pixelColor += sample.color;
@@ -578,7 +578,7 @@ void BuildScene()
 		scene.models.push_back( sphere1 );
 	}
 
-	modelIx = LoadModelBin( std::string( "models/skull.mdl" ), rm );
+	modelIx = LoadModelBin( std::string( "models/12140_Skull_v3_L2.mdl" ), rm );
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;

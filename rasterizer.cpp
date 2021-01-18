@@ -39,60 +39,6 @@ struct fragmentInput_t
 };
 
 
-void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap )
-{
-	bitmap.ClearImage( Color::Black );
-
-	const uint32_t width = std::min( image.GetWidth(), bitmap.GetWidth() );
-	const uint32_t height = std::min( image.GetHeight(), bitmap.GetHeight() );
-
-	for ( int32_t y = 0; y < height; ++y )
-	{
-		for ( int32_t x = 0; x < width; ++x )
-		{
-			Color color = image.GetPixel( x, y );
-			bitmap.SetPixel( x, y, color.AsR8G8B8A8() );
-		}
-	}
-}
-
-
-void ImageToBitmap( const Image<float>& image, Bitmap& bitmap )
-{
-	bitmap.ClearImage( Color::Black );
-
-	const uint32_t srcWidth = image.GetWidth();
-	const uint32_t srcHeight = image.GetHeight();
-
-	const uint32_t width = std::min( srcWidth, bitmap.GetWidth() );
-	const uint32_t height = std::min( srcHeight, bitmap.GetHeight() );
-
-	float minZ = FLT_MAX;
-	float maxZ = -FLT_MAX;
-	for ( int32_t y = 0; y < srcHeight; ++y )
-	{
-		for ( int32_t x = 0; x < srcWidth; ++x )
-		{
-			const float zValue = image.GetPixel( x, y );
-			minZ = std::min( minZ, zValue );
-			maxZ = std::max( maxZ, zValue );
-		}
-	}
-
-	for ( int32_t y = 0; y < height; ++y )
-	{
-		for ( int32_t x = 0; x < width; ++x )
-		{
-			const float value = image.GetPixel( x, y );
-			const float packed = ( value - minZ ) / ( maxZ - minZ );
-
-			const Color c = Color( packed );
-			bitmap.SetPixel( x, y, c.AsR8G8B8A8() );
-		}
-	}
-}
-
-
 void DrawCube( Image<Color>& image, const SceneView& view, const vec4d& minCorner, const vec4d& maxCorner, Color color = Color::Green )
 {
 	vec4d corners[ 8 ] = {
@@ -370,9 +316,9 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 
 						Color color = Color::Black;
 
-						if( model.material.textured )
+						if( model.materials.textured )
 						{
-							const Image<Color>* texture = rm.GetImageRef( model.material.colorMapId );
+							const Image<Color>* texture = rm.GetImageRef( model.materials.colorMapId );
 							color = texture->GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] );
 						}
 						else
@@ -380,9 +326,9 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 							color += fragmentInput.color;
 						}
 
-						const float diffuse = model.material.Kd * intensity * std::max( 0.0, Dot( normal, lightDir ) );
-						const double specularIntensity = model.material.Ks * pow( std::max( 0.0, Dot( normal, halfVector ) ), SpecularPower );
-						const Color ambient = AmbientLight * ( (float)model.material.Ka * color );
+						const float diffuse = model.materials.Kd * intensity * std::max( 0.0, Dot( normal, lightDir ) );
+						const double specularIntensity = model.materials.Ks * pow( std::max( 0.0, Dot( normal, halfVector ) ), SpecularPower );
+						const Color ambient = AmbientLight * ( (float)model.materials.Ka * color );
 
 						const Color shadingColor = ( (float)diffuse * color ) + Color( (float)specularIntensity ) + ambient;
 
