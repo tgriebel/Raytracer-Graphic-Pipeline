@@ -64,6 +64,7 @@ sample_t RecordSkyInfo( const Ray& r, const double t )
 	sample.pt = vec3d( 0.0 );
 	sample.surfaceDot = 0.0;
 	sample.t = t;
+	sample.materialId = 0;
 
 	return sample;
 }
@@ -95,9 +96,13 @@ sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triInde
 	sample.color = Vec4dToColor( mixedColor );
 
 	sample.albedo = sample.color;
-	if( model.material.textured )
+
+	sample.materialId = tri.materialId;
+	
+	const material_t* material = rm.GetMaterialRef( sample.materialId );
+	if( material->textured )
 	{
-		const Image<Color>* texture = rm.GetImageRef( model.material.colorMapId );
+		const Image<Color>* texture = rm.GetImageRef( material->colorMapId );
 		vec2d uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
 		sample.albedo = texture->GetPixel( uv[ 0 ] * texture->GetWidth(), uv[ 1 ] * texture->GetHeight() );
 	}
@@ -198,7 +203,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 	else
 	{
 		Color finalColor = Color::Black;
-		const material_t& material = scene.models[ surfaceSample.modelIx ].material;
+		const material_t& material = *rm.GetMaterialRef( surfaceSample.materialId );
 		Color surfaceColor = material.textured ? surfaceSample.albedo : surfaceSample.color;		
 
 		vec3d viewVector = ray.GetVector().Reverse();
@@ -562,7 +567,7 @@ void BuildScene()
 	rm.PushVB( vb );
 	rm.PushIB( ib );
 
-	modelIx = LoadModelObj( std::string( "models/sphere.obj" ), rm );
+	modelIx = LoadModelBin( std::string( "models/sphere.mdl" ), rm );
 	if( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;

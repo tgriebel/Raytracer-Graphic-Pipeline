@@ -316,9 +316,11 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 
 						Color color = Color::Black;
 
-						if( model.materials.textured )
+						const material_t* material = rm.GetMaterialRef( triCache[ i ].materialId );
+
+						if( material->textured )
 						{
-							const Image<Color>* texture = rm.GetImageRef( model.materials.colorMapId );
+							const Image<Color>* texture = rm.GetImageRef( material->colorMapId );
 							color = texture->GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] );
 						}
 						else
@@ -326,9 +328,9 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 							color += fragmentInput.color;
 						}
 
-						const float diffuse = model.materials.Kd * intensity * std::max( 0.0, Dot( normal, lightDir ) );
-						const double specularIntensity = model.materials.Ks * pow( std::max( 0.0, Dot( normal, halfVector ) ), SpecularPower );
-						const Color ambient = AmbientLight * ( (float)model.materials.Ka * color );
+						const float diffuse = material->Kd * intensity * std::max( 0.0, Dot( normal, lightDir ) );
+						const double specularIntensity = material->Ks * pow( std::max( 0.0, Dot( normal, halfVector ) ), SpecularPower );
+						const Color ambient = AmbientLight * ( (float)material->Ka * color );
 
 						const Color shadingColor = ( (float)diffuse * color ) + Color( (float)specularIntensity ) + ambient;
 
