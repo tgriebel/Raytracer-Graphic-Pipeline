@@ -100,7 +100,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triInde
 	sample.materialId = tri.materialId;
 	
 	const material_t* material = rm.GetMaterialRef( sample.materialId );
-	if( material->textured )
+	if( ( material != nullptr ) && material->textured )
 	{
 		const Image<Color>* texture = rm.GetImageRef( material->colorMapId );
 		vec2d uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
@@ -583,7 +583,7 @@ void BuildScene()
 		scene.models.push_back( sphere1 );
 	}
 
-	modelIx = LoadModelBin( std::string( "models/12140_Skull_v3_L2.mdl" ), rm );
+	modelIx = LoadModelBin( std::string( "models/legoToys.mdl" ), rm );
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
