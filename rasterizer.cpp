@@ -7,6 +7,7 @@
 #include "globals.h"
 #include "../GfxCore/resourceManager.h"
 #include "../GfxCore/octree.h"
+#include "../GfxCore/util.h"
 
 Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
 
@@ -303,10 +304,10 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 
 						const vec3d normal = fragmentInput.normal.Normalize();
 
-						const light_t light = scene.lights[ 0 ];
-						const double intensity = light.intensity;
+						const light_t& L = scene.lights[ 0 ];
+						const vec4d intensity = vec4d( L.intensity, 1.0f );
 
-						vec3d lightDir = light.pos - Trunc<4, 1>( fragmentInput.wsPosition );
+						vec3d lightDir = L.pos - Trunc<4, 1>( fragmentInput.wsPosition );
 						lightDir = lightDir.Normalize();
 
 						const vec3d viewVector = Trunc<4, 1>( view.camera.origin - fragmentInput.wsPosition ).Normalize();
@@ -314,25 +315,31 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 
 						const vec3d halfVector = ( viewVector + lightDir ).Normalize();
 
-						Color color = Color::Black;
+						Color surfaceColor = Color::Black;
 
 						const material_t* material = rm.GetMaterialRef( triCache[ i ].materialId );
 
 						if( material->textured )
 						{
 							const Image<Color>* texture = rm.GetImageRef( material->colorMapId );
-							color = texture->GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] );
+							surfaceColor = texture->GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] );
 						}
 						else
 						{
-							color += fragmentInput.color;
+							surfaceColor += fragmentInput.color;
 						}
 
-						const float diffuse = material->Kd * intensity * std::max( 0.0, Dot( normal, lightDir ) );
-						const double specularIntensity = material->Ks * pow( std::max( 0.0, Dot( normal, halfVector ) ), SpecularPower );
-						const Color ambient = AmbientLight * ( (float)material->Ka * color );
+						const vec4d D = ColorToVector( Color( material->Kd ) );
+						const vec4d S = ColorToVector( Color( material->Ks ) );
 
-						const Color shadingColor = ( (float)diffuse * color ) + Color( (float)specularIntensity ) + ambient;
+						const vec4d diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0, Dot( normal, lightDir ) );
+						const vec4d specularIntensity = S * pow( std::max( 0.0, Dot( normal, halfVector ) ), SpecularPower );
+						const Color ambient = AmbientLight * ( Color( material->Ka ) * surfaceColor );
+
+						Color shadingColor;
+						shadingColor += Vec4dToColor( specularIntensity );
+						shadingColor += Vec4dToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
+						shadingColor += ambient;
 
 						const Color normalColor = Vec3dToColor( 0.5 * normal + vec3d( 0.5 ) );
 						

@@ -9,9 +9,9 @@
 
 struct light_t
 {
-	vec3d pos;
-	double intensity;
-	Color color;
+	vec3d	pos;
+	vec3d	intensity;
+	Color	color;
 };
 
 class Scene

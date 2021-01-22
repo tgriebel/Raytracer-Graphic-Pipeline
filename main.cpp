@@ -29,9 +29,9 @@
 
 ResourceManager	rm;
 
-material_t mirrorMaterial;
-material_t diffuseMaterial;
-material_t colorMaterial;
+matHdl_t		colorMaterialId = 16;
+matHdl_t		diffuseMaterialId = 17;
+matHdl_t		mirrorMaterialId = 18;
 
 Scene			scene;
 SceneView		views[4];
@@ -53,7 +53,7 @@ sample_t RecordSkyInfo( const Ray& r, const double t )
 {
 	sample_t sample;
 
-	const double skyDot = Dot( r.GetVector(), vec3d( 0.0, 0.0, 1.0 ) );
+	const double skyDot = Saturate( Dot( r.GetVector(), vec3d( 0.0, 0.0, 1.0 ) ) );
 	const Color gradient = Lerp( Color( Color::White ), skyColor, Saturate( skyDot ) );
 
 	sample.color = gradient;
@@ -213,11 +213,11 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 #if USE_RELFECTION
 		if ( ( rayDepth < MaxBounces ) && ( material.Tr > 0.0 ) )
 		{
-			const vec3d reflectVector = 2.0 * Dot( viewVector, surfaceSample.normal ) * surfaceSample.normal - viewVector;
+			vec3d reflectVector = ReflectVec3d( surfaceSample.normal, viewVector );
+			reflectVector += RandomVec3d( 0.1f );
+			reflectVector = MaxT * reflectVector;
 
 			Ray reflectionRay = Ray( surfaceSample.pt, surfaceSample.pt + reflectVector );
-
-			reflectionRay.maxt = DBL_MAX;//std::max( 0.0, reflectionVector.t - reflectionVector.mint );
 
 			const sample_t reflectSample = RayTrace_r( reflectionRay, rayDepth + 1 );
 			relfectionColor = material.Tr * reflectSample.color;
@@ -232,8 +232,8 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 		const size_t lightCnt = scene.lights.size();
 		for ( size_t li = 0; li < lightCnt; ++li )
 		{
-			vec3d& lightPos = scene.lights[ li ].pos;
-
+			light_t& L = scene.lights[ li ];
+			vec3d& lightPos = L.pos;
 			
 			Ray shadowRay = Ray( surfaceSample.pt, lightPos );
 
@@ -247,24 +247,28 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 			Color shadingColor = Color::Black;
 			if ( !lightOccluded )
 			{
-				const double intensity = scene.lights[ li ].intensity;
+				const vec4d intensity = vec4d( L.intensity, 1.0f );
 
 				vec3d lightDir = shadowRay.GetVector();
 				lightDir = lightDir.Normalize();
 
 				const vec3d halfVector = ( viewVector + lightDir ).Normalize();
 
-				const double diffuseIntensity = material.Kd * intensity * std::max( 0.0, Dot( lightDir, surfaceSample.normal ) );
+				const vec4d D = ColorToVector( Color( material.Kd ) );
+				const vec4d S = ColorToVector( Color( material.Ks ) );
 
-				const double specularIntensity = material.Ks * pow( std::max( 0.0, Dot( surfaceSample.normal, halfVector ) ), SpecularPower );
+				const vec4d diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0, Dot( lightDir, surfaceSample.normal ) );
 
-				shadingColor = ( (float) diffuseIntensity * surfaceColor ) + Color( (float) specularIntensity );
+				const vec4d specularIntensity = S * pow( std::max( 0.0, Dot( surfaceSample.normal, halfVector ) ), material.Ns );
+				
+				shadingColor += Vec4dToColor( specularIntensity );
+				shadingColor += Vec4dToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
 			}
 
 			finalColor += shadingColor + relfectionColor;
 		}
 
-		const Color ambient = AmbientLight * ( (float) material.Ka * surfaceColor );
+		const Color ambient = AmbientLight * ( Color( material.Ka ) * surfaceColor );
 
 		sample = surfaceSample;
 		sample.color = finalColor + ambient;
@@ -352,7 +356,14 @@ void SetupViews()
 
 void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, const uint32_t py )
 {
-#if USE_SS4X
+#if	USE_SSRAND
+	const uint32_t subSampleCnt = 100;
+	vec2d subPixelOffsets[ subSampleCnt ];
+	for( uint32_t ri = 0; ri < subSampleCnt; ++ri )
+	{
+		subPixelOffsets[ ri ] = vec2d( Random(), Random() );
+	}
+#elif USE_SS4X
 	static const uint32_t subSampleCnt = 4;
 	static const vec2d subPixelOffsets[ subSampleCnt ] = { vec2d( 0.25, 0.25 ), vec2d( 0.75, 0.25 ), vec2d( 0.25, 0.75 ), vec2d( 0.75, 0.75 ) };
 #else
@@ -376,6 +387,28 @@ void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, 
 		vec2d uv = vec2d( pixelXY[ 0 ] / ( view.targetSize[ 0 ] - 1.0 ), pixelXY[ 1 ] / ( view.targetSize[ 1 ] - 1.0 ) );
 
 		Ray ray = view.camera.GetViewRay( uv );
+
+		//////////////////////////////////////////////////////////////////////////////////////////////////////
+		// Experimental
+		const vec3d up = vec3d( 0.0, 0.0, 1.0 );
+		const vec3d z = ray.GetVector();
+		const vec3d x = Cross( up, z );
+		const vec3d y = Cross( x, z );
+
+		float e0, e1;
+		RandomPointOnCircle( e0, e1 );
+		const vec4d r = vec4d( e0, e1, 0.0, 0.0 );
+		
+		const mat4x4d m = CreateMatrix4x4(	x[ 0 ], x[ 1 ], x[ 2 ], 0.0,
+											y[ 0 ], y[ 1 ], y[ 2 ], 0.0,
+											z[ 0 ], z[ 1 ], z[ 2 ], 0.0,
+											0.0,	0.0,	0.0,	1.0 );
+
+		const vec4d perturb = m * r;
+
+		//ray.d = ray.d + Trunc<4,1>( 0.01 * perturb );
+		//assert( ( Dot( x, z ) < 1e6 ) && ( Dot( x, y ) < 1e6 ) && ( Dot( y, z ) < 1e6 ) );
+		//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		sample = RayTrace_r( ray, 0 );
 		pixelColor += sample.color;
@@ -518,25 +551,46 @@ mat4x4d BuildModelMatrix( const vec3d& origin, const vec3d& degressZYZ, const do
 }
 
 
-void CreateMaterials()
+void CreateMaterials( ResourceManager& rm )
 {
-	mirrorMaterial.Ka = 0.1;
-	mirrorMaterial.Kd = 0.1;
-	mirrorMaterial.Ks = 1.0;
-	mirrorMaterial.Ke = 1.0;
-	mirrorMaterial.Tr = 1.0f;
+	for( uint32_t i = 0; i < 16; ++i )
+	{
+		material_t dbgMaterial;
+		memset( &dbgMaterial, 0, sizeof( material_t ) );
+		dbgMaterial.Ka = Color( 1.0f ).AsRGBf();
+		dbgMaterial.Kd = Color( DbgColors[ i ] ).AsRGBf();
+		dbgMaterial.Ks = Color( 0.0f ).AsRGBf();
+		dbgMaterial.Ke = Color( 0.0f ).AsRGBf();
+		dbgMaterial.Tr = 0.0f;
+		rm.StoreMaterialCopy( dbgMaterial );
+	}
 
-	diffuseMaterial.Ka = 1.0;
-	diffuseMaterial.Kd = 1.0;
-	diffuseMaterial.Ks = 1.0;
-	diffuseMaterial.Ke = 1.0;
-	diffuseMaterial.Tr = 0.0f;
-
-	colorMaterial.Ka = 1.0;
-	colorMaterial.Kd = 1.0;
-	colorMaterial.Ks = 1.0;
-	colorMaterial.Ke = 1.0;
+	material_t colorMaterial;
+	memset( &colorMaterial, 0, sizeof( material_t ) );
+	colorMaterial.Ka = Color( 1.0f ).AsRGBf();
+	colorMaterial.Kd = Color( 1.0f ).AsRGBf();
+	colorMaterial.Ks = Color( 0.0f ).AsRGBf();
+	colorMaterial.Ke = Color( 0.0f ).AsRGBf();
 	colorMaterial.Tr = 0.0f;
+	rm.StoreMaterialCopy( colorMaterial );
+
+	material_t diffuseMaterial;
+	memset( &diffuseMaterial, 0, sizeof( material_t ) );
+	diffuseMaterial.Ka = Color( 1.0f ).AsRGBf();
+	diffuseMaterial.Kd = Color( 1.0f ).AsRGBf();
+	diffuseMaterial.Ks = Color( 1.0f ).AsRGBf();
+	diffuseMaterial.Ke = Color( 1.0f ).AsRGBf();
+	diffuseMaterial.Tr = 0.0f;
+	rm.StoreMaterialCopy( diffuseMaterial );
+
+	material_t mirrorMaterial;
+	memset( &diffuseMaterial, 0, sizeof( material_t ) );
+	mirrorMaterial.Ka = Color( 1.0f ).AsRGBf();
+	mirrorMaterial.Kd = Color( 1.0f ).AsRGBf();
+	mirrorMaterial.Ks = Color( 1.0f ).AsRGBf();
+	mirrorMaterial.Ke = Color( 1.0f ).AsRGBf();
+	mirrorMaterial.Tr = 0.8f;
+	rm.StoreMaterialCopy( mirrorMaterial );
 }
 
 
@@ -554,12 +608,12 @@ void BuildScene()
 		
 		ModelInstance teapot0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 10.0 ), vec3d( 0.0, 0.0, -90.0 ), 1.0, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Yellow, &teapot0, colorMaterial );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Yellow, &teapot0, colorMaterialId );
 		scene.models.push_back( teapot0 );
 		
 		ModelInstance teapot1;
 		modelMatrix = BuildModelMatrix( vec3d( -30.0, -50.0, 10.0 ), vec3d( 0.0, 0.0, 30.0 ), 1.0, RHS_XZY );
-		CreateModelInstance( modelIx, modelMatrix, true, Color::Green, &teapot1, colorMaterial );
+		CreateModelInstance( modelIx, modelMatrix, true, Color::Green, &teapot1, colorMaterialId );
 		scene.models.push_back( teapot1 );
 	}
 	*/
@@ -573,40 +627,65 @@ void BuildScene()
 		mat4x4d modelMatrix;
 
 		ModelInstance sphere0;
-		modelMatrix = BuildModelMatrix( vec3d( 30.0, 40.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.8, RHS_XZY );
-		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &sphere0, &mirrorMaterial );
+		modelMatrix = BuildModelMatrix( vec3d( 30.0, -70.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.5, RHS_XZY );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &sphere0, mirrorMaterialId );
 		scene.models.push_back( sphere0 );
 
 		ModelInstance sphere1;
-		modelMatrix = BuildModelMatrix( vec3d( -50.0, -10.0, 10.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.3, RHS_XZY );
+		modelMatrix = BuildModelMatrix( vec3d( 30.0, -20.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.5, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Red, &sphere1 );
 		scene.models.push_back( sphere1 );
+
+		ModelInstance sphere2;
+		modelMatrix = BuildModelMatrix( vec3d( 30.0, 30.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.5, RHS_XZY );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &sphere2, mirrorMaterialId );
+		scene.models.push_back( sphere2 );
+
+		ModelInstance sphere3;
+		modelMatrix = BuildModelMatrix( vec3d( 30.0, 80.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.5, RHS_XZY );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &sphere3, mirrorMaterialId );
+		scene.models.push_back( sphere3 );
 	}
 
-	modelIx = LoadModelBin( std::string( "models/legoToys.mdl" ), rm );
+	
+	modelIx = LoadModelBin( std::string( "models/12140_Skull_v3_L2.mdl" ), rm );
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
 
 		ModelInstance skull0;
 		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 10.0 ), vec3d( 0.0, 90.0, 40.0 ), 4.0, RHS_XZY );
-		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Gold, &skull0, &mirrorMaterial );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Gold, &skull0 );
 		scene.models.push_back( skull0 );
 
 		ModelInstance skull1;
 		modelMatrix = BuildModelMatrix( vec3d( -30.0, -120.0, -10.0 ), vec3d( 0.0, 90.0, 0.0 ), 5.0, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Gold, &skull1 );
-		scene.models.push_back( skull1 );		
+		scene.models.push_back( skull1 );
 	}
+	
 
-	modelIx = CreatePlaneModel( rm, vec2d( 500.0 ), vec2i( 1 ) );
+	/*
+	modelIx = LoadModelBin( std::string( "models/rx-7 veilside fortune.mdl" ), rm );
+	if ( modelIx >= 0 )
+	{
+		mat4x4d modelMatrix;
+
+		ModelInstance car0;
+		modelMatrix = BuildModelMatrix( vec3d( -30.0, -100.0, -10.0 ), vec3d( 0.0, 0.0, 0.0 ), 6.0, RHS_XZY );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &car0 );
+		scene.models.push_back( car0 );
+	}
+	*/
+
+	modelIx = CreatePlaneModel( rm, vec2d( 500.0 ), vec2i( 1 ), colorMaterialId );
 	if ( modelIx >= 0 )
 	{
 		mat4x4d modelMatrix;
 
 		ModelInstance plane0;
 		modelMatrix = BuildModelMatrix( vec3d( 0.0, 0.0, -10.0 ), vec3d( 0.0, 0.0, 0.0 ), 1.0, RHS_XYZ );
-		CreateModelInstance( rm, modelIx, modelMatrix, false, Color::White, &plane0, &mirrorMaterial );
+		CreateModelInstance( rm, modelIx, modelMatrix, false, Color::DGrey, &plane0, colorMaterialId );
 		scene.models.push_back( plane0 );
 	}
 
@@ -614,15 +693,15 @@ void BuildScene()
 	{
 		light_t l;
 		l.pos = vec3d( -200.0, -100.0, 50.0 );
-		l.intensity = 1.0f;
+		l.intensity = vec3d( 1.0, 1.0, 1.0 );
 		scene.lights.push_back( l );
 		/*
-		l.pos = vec3d( 150, 20.0, -500.0 );
-		l.intensity = 0.1f;
+		l.pos = vec3d( 150, 20.0, 0.0 );
+		l.intensity = vec3d( 0.0, 1.0, 0.0 );
 		scene.lights.push_back( l );
 
-		l.pos = vec3d( 20.0, 150.0, -25.0 );
-		l.intensity = 0.2f;
+		l.pos = vec3d( 20.0, 150.0, 25.0 );
+		l.intensity = vec3d( 0.0, 0.0, 1.0 );
 		scene.lights.push_back( l );
 		*/
 	}
@@ -687,7 +766,7 @@ int main(void)
 
 	Timer loadTimer;
 
-	CreateMaterials();
+	CreateMaterials( rm );
 
 	loadTimer.Start();
 	BuildScene();
