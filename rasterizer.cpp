@@ -15,44 +15,44 @@ extern Scene scene;
 extern Image<float> depthBuffer;
 extern ResourceManager rm;
 
-void OrthoMatrixToAxis( const mat4x4d& m, vec3d& origin, vec3d& xAxis, vec3d& yAxis, vec3d& zAxis );
-void DrawWorldAxis( Image<Color>& image, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z );
+void OrthoMatrixToAxis( const mat4x4f& m, vec3f& origin, vec3f& xAxis, vec3f& yAxis, vec3f& zAxis );
+void DrawWorldAxis( Image<Color>& image, const SceneView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z );
 
 struct vertexOut_t
 {
-	vec4d	wsPosition[ 3 ];
-	vec4d	viewPosition[ 3 ];
-	vec4d	clipPosition[ 3 ];
-	vec4d	ndc[ 3 ];
-	vec3d	normal[ 3 ];
-	vec2d	uv[ 3 ];
+	vec4f	wsPosition[ 3 ];
+	vec4f	viewPosition[ 3 ];
+	vec4f	clipPosition[ 3 ];
+	vec4f	ndc[ 3 ];
+	vec3f	normal[ 3 ];
+	vec2f	uv[ 3 ];
 	Color	color[ 3 ];
 };
 
 
 struct fragmentInput_t
 {
-	vec4d	wsPosition;
-	vec4d	clipPosition;
-	vec3d	normal;
-	vec2d	uv;
+	vec4f	wsPosition;
+	vec4f	clipPosition;
+	vec3f	normal;
+	vec2f	uv;
 	Color	color;
 };
 
 
-void DrawCube( Image<Color>& image, const SceneView& view, const vec4d& minCorner, const vec4d& maxCorner, Color color = Color::Green )
+void DrawCube( Image<Color>& image, const SceneView& view, const vec4f& minCorner, const vec4f& maxCorner, Color color = Color::Green )
 {
-	vec4d corners[ 8 ] = {
+	vec4f corners[ 8 ] = {
 		// Bottom
-		vec4d( minCorner[ 0 ], minCorner[ 1 ], minCorner[ 2 ], 1.0 ),
-		vec4d( maxCorner[ 0 ], minCorner[ 1 ], minCorner[ 2 ], 1.0 ),
-		vec4d( maxCorner[ 0 ], maxCorner[ 1 ], minCorner[ 2 ], 1.0 ),
-		vec4d( minCorner[ 0 ], maxCorner[ 1 ], minCorner[ 2 ], 1.0 ),
+		vec4f( minCorner[ 0 ], minCorner[ 1 ], minCorner[ 2 ], 1.0 ),
+		vec4f( maxCorner[ 0 ], minCorner[ 1 ], minCorner[ 2 ], 1.0 ),
+		vec4f( maxCorner[ 0 ], maxCorner[ 1 ], minCorner[ 2 ], 1.0 ),
+		vec4f( minCorner[ 0 ], maxCorner[ 1 ], minCorner[ 2 ], 1.0 ),
 		// Top
-		vec4d( minCorner[ 0 ], minCorner[ 1 ], maxCorner[ 2 ], 1.0 ),
-		vec4d( maxCorner[ 0 ], minCorner[ 1 ], maxCorner[ 2 ], 1.0 ),
-		vec4d( maxCorner[ 0 ], maxCorner[ 1 ], maxCorner[ 2 ], 1.0 ),
-		vec4d( minCorner[ 0 ], maxCorner[ 1 ], maxCorner[ 2 ], 1.0 ),
+		vec4f( minCorner[ 0 ], minCorner[ 1 ], maxCorner[ 2 ], 1.0 ),
+		vec4f( maxCorner[ 0 ], minCorner[ 1 ], maxCorner[ 2 ], 1.0 ),
+		vec4f( maxCorner[ 0 ], maxCorner[ 1 ], maxCorner[ 2 ], 1.0 ),
+		vec4f( minCorner[ 0 ], maxCorner[ 1 ], maxCorner[ 2 ], 1.0 ),
 	};
 
 	int edges[ 12 ][ 2 ] = {
@@ -77,7 +77,7 @@ void DrawCube( Image<Color>& image, const SceneView& view, const vec4d& minCorne
 
 	for ( int i = 0; i < 8; ++i )
 	{
-		vec4d pt;
+		vec4f pt;
 		ProjectPoint( view.projView, RenderSize, corners[ i ], pt );
 		ssPts[ i ] = vec2i( static_cast<int32_t>( pt[ 0 ] ), static_cast<int32_t>( pt[ 1 ] ) );
 	}
@@ -98,19 +98,19 @@ void DrawCube( Image<Color>& image, const SceneView& view, const vec4d& minCorne
 }
 
 
-void DrawWorldAxis( Image<Color>& image, const SceneView& view, double size, const vec3d& origin, const vec3d& X, const vec3d& Y, const vec3d& Z )
+void DrawWorldAxis( Image<Color>& image, const SceneView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z )
 {
-	vec4d points[ 4 ] = {
-		{ vec4d( origin, 1.0 ) },
-		{ vec4d( origin + size * X.Normalize(), 1.0 ) },
-		{ vec4d( origin + size * Y.Normalize(), 1.0 ) },
-		{ vec4d( origin + size * Z.Normalize(), 1.0 ) },
+	vec4f points[ 4 ] = {
+		{ vec4f( origin, 1.0 ) },
+		{ vec4f( origin + size * X.Normalize(), 1.0 ) },
+		{ vec4f( origin + size * Y.Normalize(), 1.0 ) },
+		{ vec4f( origin + size * Z.Normalize(), 1.0 ) },
 	};
 
 	vec2i ssPts[ 4 ];
 	for ( int i = 0; i < 4; ++i )
 	{
-		vec4d pt;
+		vec4f pt;
 		ProjectPoint( view.projView, RenderSize, points[ i ], pt );
 		ssPts[ i ] = vec2i( static_cast<int32_t>( pt[ 0 ] ), static_cast<int32_t>( pt[ 1 ] ) );
 	}
@@ -122,14 +122,14 @@ void DrawWorldAxis( Image<Color>& image, const SceneView& view, double size, con
 }
 
 
-void DrawWorldPoint( Image<Color>& image, const SceneView& view, const vec4d& point, const int32_t size, const Color& color )
+void DrawWorldPoint( Image<Color>& image, const SceneView& view, const vec4f& point, const int32_t size, const Color& color )
 {
-	vec4d projPt;
+	vec4f projPt;
 	ProjectPoint( view.projView, view.targetSize, point, projPt );
 
 	vec2i ssPt = vec2i( static_cast<int32_t>( projPt[ 0 ] ), static_cast<int32_t>( projPt[ 1 ] ) );
-	vec2d halfPt = vec2d( 0.5 * ( (double)size + 0.5 ) );
-	vec2d start = Trunc<4, 2>( projPt ) - halfPt;
+	vec2f halfPt = vec2f( 0.5f * ( (float)size + 0.5f ) );
+	vec2f start = Trunc<4, 2>( projPt ) - halfPt;
 
 	int32_t i0 = static_cast<int32_t>( start[ 0 ] );
 	int32_t iN = i0 + size;
@@ -149,10 +149,10 @@ void DrawWorldPoint( Image<Color>& image, const SceneView& view, const vec4d& po
 
 void DrawRay( Image<Color>& image, const SceneView& view, const Ray& ray, const Color& color )
 {
-	vec4d ssPt[ 2 ];
-	vec4d wsPt[ 2 ];
-	wsPt[ 0 ] = vec4d( ray.o, 1.0 );
-	wsPt[ 1 ] = vec4d( ray.GetEndPoint(), 1.0 );
+	vec4f ssPt[ 2 ];
+	vec4f wsPt[ 2 ];
+	wsPt[ 0 ] = vec4f( ray.o, 1.0 );
+	wsPt[ 1 ] = vec4f( ray.GetEndPoint(), 1.0 );
 	ProjectPoint( view.projView, view.targetSize, wsPt[ 0 ], ssPt[ 0 ] );
 	ProjectPoint( view.projView, view.targetSize, wsPt[ 1 ], ssPt[ 1 ] );
 	DrawLine( image, (int)ssPt[ 0 ][ 0 ], (int)ssPt[ 0 ][ 1 ], (int)ssPt[ 1 ][ 0 ], (int)ssPt[ 1 ][ 1 ], color.AsR8G8B8A8() );
@@ -163,7 +163,7 @@ template<typename T>
 void DrawOctree( Image<Color>& image, const SceneView& view, const Octree<T>& octree, const Color& color )
 {
 	AABB bounds = octree.GetAABB();
-	DrawCube( image, view, vec4d( bounds.min, 1.0 ), vec4d( bounds.max, 1.0 ), color );
+	DrawCube( image, view, vec4f( bounds.min, 1.0 ), vec4f( bounds.max, 1.0 ), color );
 
 	auto nodeEnd = octree.children.end();
 	for ( auto node = octree.children.begin(); node != nodeEnd; ++node )
@@ -175,10 +175,10 @@ void DrawOctree( Image<Color>& image, const SceneView& view, const Octree<T>& oc
 
 bool VertexShader( const SceneView& view, const Triangle& tri, vertexOut_t& outVertex )
 {
-	const mat4x4d& mvp = view.projView;
+	const mat4x4f& mvp = view.projView;
 
-	const vec4d* wsPts[ 3 ];
-	vec4d ssPts[ 3 ];
+	const vec4f* wsPts[ 3 ];
+	vec4f ssPts[ 3 ];
 	bool culled = false;
 
 	wsPts[ 0 ] = &tri.v0.pos;
@@ -220,7 +220,7 @@ bool VertexShader( const SceneView& view, const Triangle& tri, vertexOut_t& outV
 }
 
 
-bool EmitFragment( const vec3d& baryPt, const vertexOut_t& vo, fragmentInput_t& outFragment )
+bool EmitFragment( const vec3f& baryPt, const vertexOut_t& vo, fragmentInput_t& outFragment )
 {
 	if( ( baryPt[ 0 ] < 0.0 ) || ( baryPt[ 1 ] < 0.0 ) || ( baryPt[ 2 ] < 0.0 ) )
 	{
@@ -250,8 +250,8 @@ bool PixelShader( const fragmentInput_t & frag )
 
 void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = true )
 {
-	mat4x4d mvp = view.projTransform * view.viewTransform;
-	const uint32_t modelCnt = scene.models.size();
+	mat4x4f mvp = view.projTransform * view.viewTransform;
+	const uint32_t modelCnt = static_cast<uint32_t>( scene.models.size() );
 
 #if DRAW_WIREFRAME
 	for ( uint32_t m = 0; m < modelCnt; ++m )
@@ -278,9 +278,9 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 					ssBox.Expand( Trunc<4, 1>( vo.clipPosition[ i ] ) );
 				}
 
-				const vec3d tPt0 = Trunc<4, 1>( vo.clipPosition[ 0 ] );
-				const vec3d tPt1 = Trunc<4, 1>( vo.clipPosition[ 1 ] );
-				const vec3d tPt2 = Trunc<4, 1>( vo.clipPosition[ 2 ] );
+				const vec3f tPt0 = Trunc<4, 1>( vo.clipPosition[ 0 ] );
+				const vec3f tPt1 = Trunc<4, 1>( vo.clipPosition[ 1 ] );
+				const vec3f tPt2 = Trunc<4, 1>( vo.clipPosition[ 2 ] );
 
 				const int32_t x0 = std::max( 0,										static_cast<int>( ssBox.min[ 0 ] ) );
 				const int32_t x1 = std::min( static_cast<int>( image.GetWidth() ),	static_cast<int>( ssBox.max[ 0 ] + 0.5 ) );
@@ -291,7 +291,7 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 				{
 					for ( int32_t x = x0; x <= x1; ++x )
 					{
-						const vec3d baryPt = PointToBarycentric( vec3d( x, y, 0.0 ), tPt0, tPt1, tPt2 );
+						const vec3f baryPt = PointToBarycentric( vec3f( x, y, 0.0 ), tPt0, tPt1, tPt2 );
 
 						fragmentInput_t fragmentInput;
 						if( !EmitFragment( baryPt, vo, fragmentInput ) )
@@ -302,18 +302,18 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 						if ( depth >= zBuffer.GetPixel( x, y ) )
 							continue;
 
-						const vec3d normal = fragmentInput.normal.Normalize();
+						const vec3f normal = fragmentInput.normal.Normalize();
 
 						const light_t& L = scene.lights[ 0 ];
-						const vec4d intensity = vec4d( L.intensity, 1.0f );
+						const vec4f intensity = vec4f( L.intensity, 1.0f );
 
-						vec3d lightDir = L.pos - Trunc<4, 1>( fragmentInput.wsPosition );
+						vec3f lightDir = L.pos - Trunc<4, 1>( fragmentInput.wsPosition );
 						lightDir = lightDir.Normalize();
 
-						const vec3d viewVector = Trunc<4, 1>( view.camera.origin - fragmentInput.wsPosition ).Normalize();
+						const vec3f viewVector = Trunc<4, 1>( view.camera.origin - fragmentInput.wsPosition ).Normalize();
 						const Color viewDiffuse = Color( (float)Dot( viewVector, normal ) );
 
-						const vec3d halfVector = ( viewVector + lightDir ).Normalize();
+						const vec3f halfVector = ( viewVector + lightDir ).Normalize();
 
 						Color surfaceColor = Color::Black;
 
@@ -329,19 +329,21 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 							surfaceColor += fragmentInput.color;
 						}
 
-						const vec4d D = ColorToVector( Color( material->Kd ) );
-						const vec4d S = ColorToVector( Color( material->Ks ) );
+						const vec4f D = ColorToVector( Color( material->Kd ) );
+						const vec4f S = ColorToVector( Color( material->Ks ) );
 
-						const vec4d diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0, Dot( normal, lightDir ) );
-						const vec4d specularIntensity = S * pow( std::max( 0.0, Dot( normal, halfVector ) ), SpecularPower );
+						const vec4f diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0, Dot( normal, lightDir ) );
+						const vec4f specularIntensity = S * pow( std::max( 0.0, Dot( normal, halfVector ) ), material->Ns );
 						const Color ambient = AmbientLight * ( Color( material->Ka ) * surfaceColor );
 
 						Color shadingColor;
-						shadingColor += Vec4dToColor( specularIntensity );
-						shadingColor += Vec4dToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
+						shadingColor = vec4fToColor( specularIntensity );
+						shadingColor += vec4fToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
 						shadingColor += ambient;
 
-						const Color normalColor = Vec3dToColor( 0.5 * normal + vec3d( 0.5 ) );
+						shadingColor = vec3fToColor( BrdfGGX( normal, viewVector, lightDir, *material ) );
+
+						const Color normalColor = vec3fToColor( 0.5 * normal + vec3f( 0.5 ) );
 						
 						image.SetPixel( x, y, LinearToSrgb( shadingColor ).AsR8G8B8A8() );
 						zBuffer.SetPixel( x, y, depth );
@@ -374,15 +376,15 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 			const ModelInstance& model = scene.models[ m ];
 #if DRAW_AABB
 			const AABB bounds = model.octree.GetAABB();
-			DrawCube( image, view, vec4d( bounds.min, 1.0 ), vec4d( bounds.max, 1.0 ) );
-			DrawCube( image, view, vec4d( bounds.min, 1.0 ), vec4d( bounds.max, 1.0 ) );
+			DrawCube( image, view, vec4f( bounds.min, 1.0 ), vec4f( bounds.max, 1.0 ) );
+			DrawCube( image, view, vec4f( bounds.min, 1.0 ), vec4f( bounds.max, 1.0 ) );
 #endif
-			vec3d origin;
-			vec3d xAxis;
-			vec3d yAxis;
-			vec3d zAxis;
+			vec3f origin;
+			vec3f xAxis;
+			vec3f yAxis;
+			vec3f zAxis;
 			OrthoMatrixToAxis( model.transform, origin, xAxis, yAxis, zAxis );
-			DrawWorldAxis( image, view, 20.0, origin, xAxis, yAxis, zAxis );
+			DrawWorldAxis( image, view, 20.0f, origin, xAxis, yAxis, zAxis );
 		}
 	}
 	

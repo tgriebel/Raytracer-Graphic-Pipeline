@@ -49,19 +49,19 @@ void BitmapToImage( const Bitmap& bitmap, Image<Color>& image );
 
 static Color skyColor = Color::Blue;
 
-sample_t RecordSkyInfo( const Ray& r, const double t )
+sample_t RecordSkyInfo( const Ray& r, const float t )
 {
 	sample_t sample;
 
-	const double skyDot = Saturate( Dot( r.GetVector(), vec3d( 0.0, 0.0, 1.0 ) ) );
+	const float skyDot = Saturate( Dot( r.GetVector(), vec3f( 0.0, 0.0, 1.0 ) ) );
 	const Color gradient = Lerp( Color( Color::White ), skyColor, Saturate( skyDot ) );
 
 	sample.color = gradient;
 	sample.albedo = gradient;
-	sample.normal = vec3d( 0.0 );
+	sample.normal = vec3f( 0.0 );
 	sample.hitCode = HIT_SKY;
 	sample.modelIx = ResourceManager::InvalidModelIx;
-	sample.pt = vec3d( 0.0 );
+	sample.pt = vec3f( 0.0 );
 	sample.surfaceDot = 0.0;
 	sample.t = t;
 	sample.materialId = 0;
@@ -70,7 +70,7 @@ sample_t RecordSkyInfo( const Ray& r, const double t )
 }
 
 
-sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triIndex, const uint32_t modelIx )
+sample_t RecordSurfaceInfo( const Ray& r, const float t, const uint32_t triIndex, const uint32_t modelIx )
 {
 	const ModelInstance& model = scene.models[ modelIx ];
 	const std::vector<Triangle>& triCache = model.triCache;
@@ -81,7 +81,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triInde
 	sample.pt = r.GetPoint( t );
 	sample.t = t;
 
-	const vec3d b = PointToBarycentric( sample.pt, Trunc<4, 1>( tri.v0.pos ), Trunc<4, 1>( tri.v1.pos ), Trunc<4, 1>( tri.v2.pos ) );
+	const vec3f b = PointToBarycentric( sample.pt, Trunc<4, 1>( tri.v0.pos ), Trunc<4, 1>( tri.v1.pos ), Trunc<4, 1>( tri.v2.pos ) );
 #if PHONG_NORMALS
 	sample.normal = ( b[ 0 ] * tri.v0.normal ) + ( b[ 1 ] * tri.v1.normal ) + ( b[ 2 ] * tri.v2.normal );
 	sample.normal = sample.normal.Normalize();
@@ -89,11 +89,11 @@ sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triInde
 	sample.normal = tri.n;
 #endif
 
-	vec4d color0 = ColorToVector( tri.v0.color );
-	vec4d color1 = ColorToVector( tri.v1.color );
-	vec4d color2 = ColorToVector( tri.v2.color );
-	vec4d mixedColor = b[ 0 ] * color0 + b[ 1 ] * color1 + b[ 2 ] * color2;
-	sample.color = Vec4dToColor( mixedColor );
+	vec4f color0 = ColorToVector( tri.v0.color );
+	vec4f color1 = ColorToVector( tri.v1.color );
+	vec4f color2 = ColorToVector( tri.v2.color );
+	vec4f mixedColor = b[ 0 ] * color0 + b[ 1 ] * color1 + b[ 2 ] * color2;
+	sample.color = Vec4ToColor( mixedColor );
 
 	sample.albedo = sample.color;
 
@@ -103,7 +103,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triInde
 	if( ( material != nullptr ) && material->textured )
 	{
 		const Image<Color>* texture = rm.GetImageRef( material->colorMapId );
-		vec2d uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
+		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
 		sample.albedo = texture->GetPixel( uv[ 0 ] * texture->GetWidth(), uv[ 1 ] * texture->GetHeight() );
 	}
 	
@@ -125,19 +125,19 @@ sample_t RecordSurfaceInfo( const Ray& r, const double t, const uint32_t triInde
 
 bool IntersectScene( const Ray& ray, const bool cullBackfaces, const bool stopAtFirstIntersection, sample_t& outSample )
 {
-	outSample.t = DBL_MAX;
+	outSample.t = FLT_MAX;
 	outSample.hitCode = HIT_NONE;
 
 	int hitCnt = 0;
 
-	const uint32_t modelCnt = scene.models.size();
+	const uint32_t modelCnt = static_cast<uint32_t>( scene.models.size() );
 	for ( uint32_t modelIx = 0; modelIx < modelCnt; ++modelIx )
 	{
 		const ModelInstance& model = scene.models[ modelIx ];
 
 #if USE_AABB
-		double t0 = 0.0;
-		double t1 = 0.0;
+		float t0 = 0.0;
+		float t1 = 0.0;
 		if ( !model.octree.GetAABB().Intersect( ray, t0, t1 ) )
 		{
 			continue;
@@ -156,7 +156,7 @@ bool IntersectScene( const Ray& ray, const bool cullBackfaces, const bool stopAt
 			// const uint32_t triIx = ix;
 			const Triangle& tri = triCache[ triIx ];
 
-			double t;
+			float t;
 			bool isBackface;
 			if( RayToTriangleIntersection( ray, tri, isBackface, t ) )
 			{
@@ -180,8 +180,8 @@ bool IntersectScene( const Ray& ray, const bool cullBackfaces, const bool stopAt
 
 sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 {
-	double tnear = 0;
-	double tfar = 0;
+	float tnear = 0;
+	float tfar = 0;
 	
 	sample_t sample;
 	sample.color = Color::Black;
@@ -206,15 +206,15 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 		const material_t& material = *rm.GetMaterialRef( surfaceSample.materialId );
 		Color surfaceColor = material.textured ? surfaceSample.albedo : surfaceSample.color;		
 
-		vec3d viewVector = ray.GetVector().Reverse();
+		vec3f viewVector = ray.GetVector().Reverse();
 		viewVector = viewVector.Normalize();
 
 		Color relfectionColor = Color::Black;
 #if USE_RELFECTION
 		if ( ( rayDepth < MaxBounces ) && ( material.Tr > 0.0 ) )
 		{
-			vec3d reflectVector = ReflectVec3d( surfaceSample.normal, viewVector );
-			reflectVector += RandomVec3d( 0.1f );
+			vec3f reflectVector = ReflectVector( surfaceSample.normal, viewVector );
+			reflectVector += RandomVector( 0.1f );
 			reflectVector = MaxT * reflectVector;
 
 			Ray reflectionRay = Ray( surfaceSample.pt, surfaceSample.pt + reflectVector );
@@ -233,7 +233,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 		for ( size_t li = 0; li < lightCnt; ++li )
 		{
 			light_t& L = scene.lights[ li ];
-			vec3d& lightPos = L.pos;
+			vec3f& lightPos = L.pos;
 			
 			Ray shadowRay = Ray( surfaceSample.pt, lightPos );
 
@@ -247,22 +247,22 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 			Color shadingColor = Color::Black;
 			if ( !lightOccluded )
 			{
-				const vec4d intensity = vec4d( L.intensity, 1.0f );
+				const vec4f intensity = vec4f( L.intensity, 1.0f );
 
-				vec3d lightDir = shadowRay.GetVector();
+				vec3f lightDir = shadowRay.GetVector();
 				lightDir = lightDir.Normalize();
 
-				const vec3d halfVector = ( viewVector + lightDir ).Normalize();
+				const vec3f halfVector = ( viewVector + lightDir ).Normalize();
 
-				const vec4d D = ColorToVector( Color( material.Kd ) );
-				const vec4d S = ColorToVector( Color( material.Ks ) );
+				const vec4f D = ColorToVector( Color( material.Kd ) );
+				const vec4f S = ColorToVector( Color( material.Ks ) );
 
-				const vec4d diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0, Dot( lightDir, surfaceSample.normal ) );
+				const vec4f diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0f, Dot( lightDir, surfaceSample.normal ) );
 
-				const vec4d specularIntensity = S * pow( std::max( 0.0, Dot( surfaceSample.normal, halfVector ) ), material.Ns );
+				const vec4f specularIntensity = Multiply( S, intensity ) * pow( std::max( 0.0f, Dot( surfaceSample.normal, halfVector ) ), material.Ns );
 				
-				shadingColor += Vec4dToColor( specularIntensity );
-				shadingColor += Vec4dToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
+				shadingColor += Vec4ToColor( specularIntensity );
+				shadingColor += Vec4ToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
 			}
 
 			finalColor += shadingColor + relfectionColor;
@@ -284,10 +284,10 @@ SceneView SetupFrontView()
 	SceneView view;
 
 	view.targetSize = RenderSize;
-	view.camera = Camera(	vec4d( -280.0, -30.0, 50.0, 0.0 ),
-							vec4d( 0.0, -1.0, 0.0, 0.0 ),
-							vec4d( 0.0, 0.0, -1.0, 0.0 ),
-							vec4d( -1.0, 0.0, 0.0, 0.0 ),
+	view.camera = Camera(	vec4f( -280.0f, -30.0f, 50.0f, 0.0f ),
+							vec4f( 0.0f, -1.0f, 0.0f, 0.0f ),
+							vec4f( 0.0f, 0.0f, -1.0f, 0.0f ),
+							vec4f( -1.0f, 0.0f, 0.0f, 0.0f ),
 							CameraFov,
 							AspectRatio( view.targetSize ),
 							CameraNearPlane,
@@ -306,10 +306,10 @@ SceneView SetupTopView()
 	SceneView view;
 
 	view.targetSize = RenderSize;
-	view.camera = Camera(	vec4d( 0.0, 0.0, 280.0, 0.0 ),
-							vec4d( 0.0, -1.0, 0.0, 0.0 ),
-							vec4d( -1.0, 0.0, 0.0, 0.0 ),
-							vec4d( 0.0, 0.0, 1.0, 0.0 ),
+	view.camera = Camera(	vec4f( 0.0, 0.0, 280.0, 0.0 ),
+							vec4f( 0.0, -1.0, 0.0, 0.0 ),
+							vec4f( -1.0, 0.0, 0.0, 0.0 ),
+							vec4f( 0.0, 0.0, 1.0, 0.0 ),
 							CameraFov,
 							AspectRatio( view.targetSize ),
 							CameraNearPlane,
@@ -328,10 +328,10 @@ SceneView SetupSideView()
 	SceneView view;
 
 	view.targetSize = RenderSize;
-	view.camera = Camera(	vec4d( 0.0, 280.0, 0.0, 0.0 ),
-							vec4d( -1.0, 0.0, 0.0, 0.0 ),
-							vec4d( 0.0, 0.0, -1.0, 0.0 ),
-							vec4d( 0.0, 1.0, 0.0, 0.0 ),
+	view.camera = Camera(	vec4f( 0.0, 280.0, 0.0, 0.0 ),
+							vec4f( -1.0, 0.0, 0.0, 0.0 ),
+							vec4f( 0.0, 0.0, -1.0, 0.0 ),
+							vec4f( 0.0, 1.0, 0.0, 0.0 ),
 							CameraFov,
 							AspectRatio( view.targetSize ),
 							CameraNearPlane,
@@ -358,53 +358,53 @@ void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, 
 {
 #if	USE_SSRAND
 	const uint32_t subSampleCnt = 100;
-	vec2d subPixelOffsets[ subSampleCnt ];
+	vec2f subPixelOffsets[ subSampleCnt ];
 	for( uint32_t ri = 0; ri < subSampleCnt; ++ri )
 	{
-		subPixelOffsets[ ri ] = vec2d( Random(), Random() );
+		subPixelOffsets[ ri ] = vec2f( Random(), Random() );
 	}
 #elif USE_SS4X
 	static const uint32_t subSampleCnt = 4;
-	static const vec2d subPixelOffsets[ subSampleCnt ] = { vec2d( 0.25, 0.25 ), vec2d( 0.75, 0.25 ), vec2d( 0.25, 0.75 ), vec2d( 0.75, 0.75 ) };
+	static const vec2f subPixelOffsets[ subSampleCnt ] = { vec2f( 0.25, 0.25 ), vec2f( 0.75, 0.25 ), vec2f( 0.25, 0.75 ), vec2f( 0.75, 0.75 ) };
 #else
 	static const uint32_t subSampleCnt = 1;
-	static const vec2d subPixelOffsets[ subSampleCnt ] = { vec2d( 0.5, 0.5 ) };
+	static const vec2f subPixelOffsets[ subSampleCnt ] = { vec2f( 0.5, 0.5 ) };
 #endif
 
 	Color pixelColor = Color::Black;
-	vec3d normal = vec3d( 0.0, 0.0, 0.0 );
-	double diffuse = 0.0; // Eye-to-Surface
-	double coverage = 0.0;
-	double t = 0.0;
+	vec3f normal = vec3f( 0.0, 0.0, 0.0 );
+	float diffuse = 0.0; // Eye-to-Surface
+	float coverage = 0.0;
+	float t = 0.0;
 
 	sample_t sample;
 	sample.hitCode = HIT_NONE;
 
 	for ( int32_t s = 0; s < subSampleCnt; ++s ) // Subsamples
 	{
-		vec2d pixelXY = vec2d( static_cast<double>( px ), static_cast<double>( py ) );
+		vec2f pixelXY = vec2f( static_cast<float>( px ), static_cast<float>( py ) );
 		pixelXY += subPixelOffsets[ s ];
-		vec2d uv = vec2d( pixelXY[ 0 ] / ( view.targetSize[ 0 ] - 1.0 ), pixelXY[ 1 ] / ( view.targetSize[ 1 ] - 1.0 ) );
+		vec2f uv = vec2f( pixelXY[ 0 ] / ( view.targetSize[ 0 ] - 1.0f ), pixelXY[ 1 ] / ( view.targetSize[ 1 ] - 1.0f ) );
 
 		Ray ray = view.camera.GetViewRay( uv );
 
 		//////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Experimental
-		const vec3d up = vec3d( 0.0, 0.0, 1.0 );
-		const vec3d z = ray.GetVector();
-		const vec3d x = Cross( up, z );
-		const vec3d y = Cross( x, z );
+		const vec3f up = vec3f( 0.0, 0.0, 1.0 );
+		const vec3f z = ray.GetVector();
+		const vec3f x = Cross( up, z );
+		const vec3f y = Cross( x, z );
 
 		float e0, e1;
 		RandomPointOnCircle( e0, e1 );
-		const vec4d r = vec4d( e0, e1, 0.0, 0.0 );
+		const vec4f r = vec4f( e0, e1, 0.0, 0.0 );
 		
-		const mat4x4d m = CreateMatrix4x4(	x[ 0 ], x[ 1 ], x[ 2 ], 0.0,
-											y[ 0 ], y[ 1 ], y[ 2 ], 0.0,
-											z[ 0 ], z[ 1 ], z[ 2 ], 0.0,
-											0.0,	0.0,	0.0,	1.0 );
+		const mat4x4f m = CreateMatrix4x4(	x[ 0 ], x[ 1 ], x[ 2 ], 0.0f,
+											y[ 0 ], y[ 1 ], y[ 2 ], 0.0f,
+											z[ 0 ], z[ 1 ], z[ 2 ], 0.0f,
+											0.0f,	0.0f,	0.0f,	1.0f );
 
-		const vec4d perturb = m * r;
+		const vec4f perturb = m * r;
 
 		//ray.d = ray.d + Trunc<4,1>( 0.01 * perturb );
 		//assert( ( Dot( x, z ) < 1e6 ) && ( Dot( x, y ) < 1e6 ) && ( Dot( y, z ) < 1e6 ) );
@@ -415,7 +415,7 @@ void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, 
 		diffuse += sample.surfaceDot;
 		normal += sample.normal;
 		t += sample.t;
-		coverage += sample.hitCode != HIT_NONE ? 1.0 : 0.0;
+		coverage += sample.hitCode != HIT_NONE ? 1.0f : 0.0f;
 	}
 
 	if ( coverage > 0.0 )
@@ -432,7 +432,7 @@ void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, 
 		src.rgba().a = (float)coverage;
 
 		// normal = normal.Reverse();
-		Color normColor = Vec4dToColor( vec4d( 0.5 * normal + vec3d( 0.5 ), 1.0 ) );
+		Color normColor = Vec4ToColor( vec4f( 0.5f * normal + vec3f( 0.5f ), 1.0f ) );
 		dbg.diffuse.SetPixel( imageX, imageY, Color( (float)-diffuse ).AsR8G8B8A8() );
 		dbg.normal.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
 
@@ -496,7 +496,7 @@ void TraceScene( const SceneView& view, Image<Color>& image )
 	{
 		thread.join(); // TODO: replace with non-blocking call for better messaging
 		++threadsComplete;
-		std::cout << static_cast<int>( 100.0 * ( threadsComplete / (double)threadsLaunched ) ) << "% ";
+		std::cout << static_cast<int>( 100.0 * ( threadsComplete / (float)threadsLaunched ) ) << "% ";
 	}
 #endif
 }
@@ -516,32 +516,32 @@ void RastizeViews()
 }
 
 
-mat4x4d GetModelToWorldAxis( const axisMode_t mode )
+mat4x4f GetModelToWorldAxis( const axisMode_t mode )
 {
 	// World Space: RHS Z+
 	switch ( mode )
 	{
 	default:
 	case RHS_XZY:
-	return CreateMatrix4x4(	0.0, 0.0, -1.0, 0.0,
-							-1.0, 0.0, 0.0, 0.0,
-							0.0, 1.0, 0.0, 0.0,
-							0.0, 0.0, 0.0, 1.0 );
+	return CreateMatrix4x4(	0.0f, 0.0f, -1.0f, 0.0f,
+							-1.0f, 0.0f, 0.0f, 0.0f,
+							0.0f, 1.0f, 0.0f, 0.0f,
+							0.0f, 0.0f, 0.0f, 1.0f );
 	case RHS_XYZ:
-		return CreateMatrix4x4( 1.0, 0.0, 0.0, 0.0,
-								0.0, 1.0, 0.0, 0.0,
-								0.0, 0.0, 1.0, 0.0,
-								0.0, 0.0, 0.0, 1.0 );
+		return CreateMatrix4x4( 1.0f, 0.0f, 0.0f, 0.0f,
+								0.0f, 1.0f, 0.0f, 0.0f,
+								0.0f, 0.0f, 1.0f, 0.0f,
+								0.0f, 0.0f, 0.0f, 1.0f );
 	}
 }
 
 
-mat4x4d BuildModelMatrix( const vec3d& origin, const vec3d& degressZYZ, const double scale, const axisMode_t mode )
+mat4x4f BuildModelMatrix( const vec3f& origin, const vec3f& degressZYZ, const float scale, const axisMode_t mode )
 {
-	const mat4x4d axis = GetModelToWorldAxis( mode );
+	const mat4x4f axis = GetModelToWorldAxis( mode );
 
-	mat4x4d modelMatrix = axis;
-	modelMatrix = ComputeScale( vec3d( scale ) ) * modelMatrix;
+	mat4x4f modelMatrix = axis;
+	modelMatrix = ComputeScale( vec3f( scale ) ) * modelMatrix;
 	modelMatrix = ComputeRotationZ( degressZYZ[ 2 ] ) * modelMatrix;
 	modelMatrix = ComputeRotationY( degressZYZ[ 1 ] ) * modelMatrix;
 	modelMatrix = ComputeRotationX( degressZYZ[ 0 ] ) * modelMatrix;
@@ -584,7 +584,7 @@ void CreateMaterials( ResourceManager& rm )
 	rm.StoreMaterialCopy( diffuseMaterial );
 
 	material_t mirrorMaterial;
-	memset( &diffuseMaterial, 0, sizeof( material_t ) );
+	memset( &mirrorMaterial, 0, sizeof( material_t ) );
 	mirrorMaterial.Ka = Color( 1.0f ).AsRGBf();
 	mirrorMaterial.Kd = Color( 1.0f ).AsRGBf();
 	mirrorMaterial.Ks = Color( 1.0f ).AsRGBf();
@@ -604,15 +604,15 @@ void BuildScene()
 	modelIx = LoadModelObj( std::string( "models/teapot.obj" ), vb, ib );
 	if ( modelIx >= 0 )
 	{
-		mat4x4d modelMatrix;
+		mat4x4f modelMatrix;
 		
 		ModelInstance teapot0;
-		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 10.0 ), vec3d( 0.0, 0.0, -90.0 ), 1.0, RHS_XZY );
+		modelMatrix = BuildModelMatrix( vec3f( 30.0, 120.0, 10.0 ), vec3f( 0.0, 0.0, -90.0 ), 1.0, RHS_XZY );
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Yellow, &teapot0, colorMaterialId );
 		scene.models.push_back( teapot0 );
 		
 		ModelInstance teapot1;
-		modelMatrix = BuildModelMatrix( vec3d( -30.0, -50.0, 10.0 ), vec3d( 0.0, 0.0, 30.0 ), 1.0, RHS_XZY );
+		modelMatrix = BuildModelMatrix( vec3f( -30.0, -50.0, 10.0 ), vec3f( 0.0, 0.0, 30.0 ), 1.0, RHS_XZY );
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Green, &teapot1, colorMaterialId );
 		scene.models.push_back( teapot1 );
 	}
@@ -624,67 +624,67 @@ void BuildScene()
 	modelIx = LoadModelBin( std::string( "models/sphere.mdl" ), rm );
 	if( modelIx >= 0 )
 	{
-		mat4x4d modelMatrix;
+		mat4x4f modelMatrix;
 
 		ModelInstance sphere0;
-		modelMatrix = BuildModelMatrix( vec3d( 30.0, -70.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.5, RHS_XZY );
+		modelMatrix = BuildModelMatrix( vec3f( 30.0f, -70.0f, 0.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 0.5f, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &sphere0, mirrorMaterialId );
 		scene.models.push_back( sphere0 );
 
 		ModelInstance sphere1;
-		modelMatrix = BuildModelMatrix( vec3d( 30.0, -20.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.5, RHS_XZY );
+		modelMatrix = BuildModelMatrix( vec3f( 30.0f, -20.0f, 0.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 0.5f, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Red, &sphere1 );
 		scene.models.push_back( sphere1 );
 
 		ModelInstance sphere2;
-		modelMatrix = BuildModelMatrix( vec3d( 30.0, 30.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.5, RHS_XZY );
+		modelMatrix = BuildModelMatrix( vec3f( 30.0f, 30.0f, 0.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 0.5f, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &sphere2, mirrorMaterialId );
 		scene.models.push_back( sphere2 );
 
 		ModelInstance sphere3;
-		modelMatrix = BuildModelMatrix( vec3d( 30.0, 80.0, 0.0 ), vec3d( 0.0, 0.0, 0.0 ), 0.5, RHS_XZY );
+		modelMatrix = BuildModelMatrix( vec3f( 30.0f, 80.0f, 0.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 0.5f, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &sphere3, mirrorMaterialId );
 		scene.models.push_back( sphere3 );
 	}
 
-	
+	/*
 	modelIx = LoadModelBin( std::string( "models/12140_Skull_v3_L2.mdl" ), rm );
 	if ( modelIx >= 0 )
 	{
-		mat4x4d modelMatrix;
+		mat4x4f modelMatrix;
 
 		ModelInstance skull0;
-		modelMatrix = BuildModelMatrix( vec3d( 30.0, 120.0, 10.0 ), vec3d( 0.0, 90.0, 40.0 ), 4.0, RHS_XZY );
+		modelMatrix = BuildModelMatrix( vec3f( 30.0, 120.0, 10.0 ), vec3f( 0.0, 90.0, 40.0 ), 4.0, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Gold, &skull0 );
 		scene.models.push_back( skull0 );
 
 		ModelInstance skull1;
-		modelMatrix = BuildModelMatrix( vec3d( -30.0, -120.0, -10.0 ), vec3d( 0.0, 90.0, 0.0 ), 5.0, RHS_XZY );
+		modelMatrix = BuildModelMatrix( vec3f( -30.0, -120.0, -10.0 ), vec3f( 0.0, 90.0, 0.0 ), 5.0, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Gold, &skull1 );
 		scene.models.push_back( skull1 );
 	}
-	
+	*/
 
 	/*
-	modelIx = LoadModelBin( std::string( "models/rx-7 veilside fortune.mdl" ), rm );
+	modelIx = LoadModelBin( std::string( "models/911_scene.mdl" ), rm );
 	if ( modelIx >= 0 )
 	{
-		mat4x4d modelMatrix;
+		mat4x4f modelMatrix;
 
 		ModelInstance car0;
-		modelMatrix = BuildModelMatrix( vec3d( -30.0, -100.0, -10.0 ), vec3d( 0.0, 0.0, 0.0 ), 6.0, RHS_XZY );
-		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::White, &car0 );
+		modelMatrix = BuildModelMatrix( vec3f( -30.0, -100.0, -10.0 ), vec3f( 0.0, 0.0, 0.0 ), 30.0, RHS_XZY );
+		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Red, &car0 );
 		scene.models.push_back( car0 );
 	}
 	*/
 
-	modelIx = CreatePlaneModel( rm, vec2d( 500.0 ), vec2i( 1 ), colorMaterialId );
+	modelIx = CreatePlaneModel( rm, vec2f( 500.0f ), vec2i( 1 ), colorMaterialId );
 	if ( modelIx >= 0 )
 	{
-		mat4x4d modelMatrix;
+		mat4x4f modelMatrix;
 
 		ModelInstance plane0;
-		modelMatrix = BuildModelMatrix( vec3d( 0.0, 0.0, -10.0 ), vec3d( 0.0, 0.0, 0.0 ), 1.0, RHS_XYZ );
+		modelMatrix = BuildModelMatrix( vec3f( 0.0f, 0.0f, -10.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 1.0f, RHS_XYZ );
 		CreateModelInstance( rm, modelIx, modelMatrix, false, Color::DGrey, &plane0, colorMaterialId );
 		scene.models.push_back( plane0 );
 	}
@@ -692,16 +692,16 @@ void BuildScene()
 	scene.lights.reserve( 3 );
 	{
 		light_t l;
-		l.pos = vec3d( -200.0, -100.0, 50.0 );
-		l.intensity = vec3d( 1.0, 1.0, 1.0 );
+		l.pos = vec3f( -200.0f, -100.0f, 50.0f );
+		l.intensity = vec3f( 1.0f, 1.0f, 1.0f );
 		scene.lights.push_back( l );
 		/*
-		l.pos = vec3d( 150, 20.0, 0.0 );
-		l.intensity = vec3d( 0.0, 1.0, 0.0 );
+		l.pos = vec3f( 150, 20.0, 0.0 );
+		l.intensity = vec3f( 0.0, 1.0, 0.0 );
 		scene.lights.push_back( l );
 
-		l.pos = vec3d( 20.0, 150.0, 25.0 );
-		l.intensity = vec3d( 0.0, 0.0, 1.0 );
+		l.pos = vec3f( 20.0, 150.0, 25.0 );
+		l.intensity = vec3f( 0.0, 0.0, 1.0 );
 		scene.lights.push_back( l );
 		*/
 	}

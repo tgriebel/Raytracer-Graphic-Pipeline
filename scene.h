@@ -9,8 +9,8 @@
 
 struct light_t
 {
-	vec3d	pos;
-	vec3d	intensity;
+	vec3f	pos;
+	vec3f	intensity;
 	Color	color;
 };
 
@@ -27,9 +27,9 @@ class SceneView
 {
 public:
 	Camera		camera;
-	mat4x4d		viewTransform;
-	mat4x4d		projTransform;
-	mat4x4d		projView;
+	mat4x4f		viewTransform;
+	mat4x4f		projTransform;
+	mat4x4f		projView;
 	vec2i		targetSize;
 	blendMode_t	blendMode;
 };

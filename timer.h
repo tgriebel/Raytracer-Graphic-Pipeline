@@ -23,7 +23,7 @@ public:
 		endTimeMs = duration_cast<milliseconds>( system_clock::now().time_since_epoch() );
 	}
 
-	double GetElapsed()
+	uint64_t GetElapsed()
 	{
 		return ( endTimeMs - startTimeMs ).count();
 	}
