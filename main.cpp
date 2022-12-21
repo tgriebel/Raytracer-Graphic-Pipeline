@@ -104,7 +104,8 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const uint32_t triIndex
 	{
 		const Image<Color>* texture = rm.GetImageRef( material->colorMapId );
 		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
-		sample.albedo = texture->GetPixel( uv[ 0 ] * texture->GetWidth(), uv[ 1 ] * texture->GetHeight() );
+		sample.albedo = texture->GetPixel(	static_cast<int32_t>( uv[ 0 ] * texture->GetWidth() ),
+											static_cast<int32_t>( uv[ 1 ] * texture->GetHeight() ) );
 	}
 	
 	sample.surfaceDot = Dot( r.GetVector(), sample.normal );
@@ -284,17 +285,18 @@ SceneView SetupFrontView()
 	SceneView view;
 
 	view.targetSize = RenderSize;
-	view.camera = Camera(	vec4f( -280.0f, -30.0f, 50.0f, 0.0f ),
-							vec4f( 0.0f, -1.0f, 0.0f, 0.0f ),
-							vec4f( 0.0f, 0.0f, -1.0f, 0.0f ),
-							vec4f( -1.0f, 0.0f, 0.0f, 0.0f ),
-							CameraFov,
-							AspectRatio( view.targetSize ),
-							CameraNearPlane,
-							CameraFarPlane );
+	view.camera.Init(	vec4f( -280.0f, -30.0f, 50.0f, 0.0f ),
+						CreateMatrix4x4( 0.0f, -1.0f, 0.0f, 0.0f,
+										 0.0f, 0.0f, -1.0f, 0.0f,
+										 -1.0f, 0.0f, 0.0f, 0.0f,
+										 0.0f, 0.0f, 0.0f, 1.0f ),
+						AspectRatio( view.targetSize ),
+						CameraFov,
+						CameraNearPlane,
+						CameraFarPlane );
 
-	view.viewTransform = view.camera.ToViewMatrix();
-	view.projTransform = view.camera.ToPerspectiveProjMatrix();
+	view.viewTransform = view.camera.GetViewMatrix().Transpose();
+	view.projTransform = view.camera.GetPerspectiveMatrix().Transpose();
 	view.projView = view.projTransform * view.viewTransform;
 
 	return view;
@@ -306,17 +308,18 @@ SceneView SetupTopView()
 	SceneView view;
 
 	view.targetSize = RenderSize;
-	view.camera = Camera(	vec4f( 0.0, 0.0, 280.0, 0.0 ),
-							vec4f( 0.0, -1.0, 0.0, 0.0 ),
-							vec4f( -1.0, 0.0, 0.0, 0.0 ),
-							vec4f( 0.0, 0.0, 1.0, 0.0 ),
-							CameraFov,
-							AspectRatio( view.targetSize ),
-							CameraNearPlane,
-							CameraFarPlane );
+	view.camera.Init(	vec4f( 0.0f, 0.0f, 280.0f, 0.0f ),
+						CreateMatrix4x4( 0.0f, -1.0f, 0.0f, 0.0f,
+										 -1.0f, 0.0f, 0.0f, 0.0f,
+										 0.0f, 0.0f, 1.0f, 0.0f,
+										 0.0f, 0.0f, 0.0f, 1.0f ),
+						AspectRatio( view.targetSize ),
+						CameraFov,
+						CameraNearPlane,
+						CameraFarPlane );
 
-	view.viewTransform = view.camera.ToViewMatrix();
-	view.projTransform = view.camera.ToPerspectiveProjMatrix();
+	view.viewTransform = view.camera.GetViewMatrix().Transpose();
+	view.projTransform = view.camera.GetPerspectiveMatrix().Transpose();
 	view.projView = view.projTransform * view.viewTransform;
 
 	return view;
@@ -328,17 +331,18 @@ SceneView SetupSideView()
 	SceneView view;
 
 	view.targetSize = RenderSize;
-	view.camera = Camera(	vec4f( 0.0, 280.0, 0.0, 0.0 ),
-							vec4f( -1.0, 0.0, 0.0, 0.0 ),
-							vec4f( 0.0, 0.0, -1.0, 0.0 ),
-							vec4f( 0.0, 1.0, 0.0, 0.0 ),
-							CameraFov,
-							AspectRatio( view.targetSize ),
-							CameraNearPlane,
-							CameraFarPlane );
+	view.camera.Init(	vec4f( 0.0f, 280.0f, 0.0f, 0.0f ),
+						CreateMatrix4x4( -1.0f, 0.0f, 0.0f, 0.0f,
+										 0.0f, 0.0f, -1.0f, 0.0f,
+										 0.0f, 1.0f, 0.0f, 0.0f,
+										 0.0f, 1.0f, 0.0f, 1.0f ),
+						AspectRatio( view.targetSize ),
+						CameraFov,
+						CameraNearPlane,
+						CameraFarPlane );
 
-	view.viewTransform = view.camera.ToViewMatrix();
-	view.projTransform = view.camera.ToPerspectiveProjMatrix();
+	view.viewTransform = view.camera.GetViewMatrix().Transpose();
+	view.projTransform = view.camera.GetPerspectiveMatrix().Transpose();
 	view.projView = view.projTransform * view.viewTransform;
 
 	return view;
@@ -451,12 +455,16 @@ void TracePatch( const SceneView& view, Image<Color>* image, const vec2i& p0, co
 	const int32_t x1 = p1[ 0 ];
 	const int32_t y1 = p1[ 1 ];
 
-	for ( uint32_t py = y0; py < y1; ++py )
+	if( ( y1 < 0 ) || ( x1 < 0 ) ) {
+		return;
+	}
+
+	for ( uint32_t py = y0; py < static_cast<uint32_t>( y1 ); ++py )
 	{
 		if( py >= image->GetHeight() )
 			return;
 
-		for ( uint32_t px = x0; px < x1; ++px )
+		for ( uint32_t px = x0; px < static_cast<uint32_t>( x1 ); ++px )
 		{
 			if ( px >= image->GetWidth() )
 				return;
