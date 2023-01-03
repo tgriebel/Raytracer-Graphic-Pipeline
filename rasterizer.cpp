@@ -11,7 +11,7 @@
 
 Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
 
-extern Scene scene;
+extern RtScene scene;
 extern Image<float> depthBuffer;
 extern ResourceManager rm;
 
@@ -256,7 +256,7 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 #if DRAW_WIREFRAME
 	for ( uint32_t m = 0; m < modelCnt; ++m )
 	{
-		const ModelInstance& model = scene.models[ m ];
+		const RtModel& model = scene.models[ m ];
 		const Triangle* triCache = model.triCache.data();
 
 		const size_t triCnt = model.triCache.size();
@@ -373,7 +373,7 @@ void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = t
 	{
 		for ( uint32_t m = 0; m < modelCnt; ++m )
 		{
-			const ModelInstance& model = scene.models[ m ];
+			const RtModel& model = scene.models[ m ];
 #if DRAW_AABB
 			const AABB bounds = model.octree.GetAABB();
 			DrawCube( image, view, vec4f( bounds.min, 1.0 ), vec4f( bounds.max, 1.0 ) );

@@ -7,6 +7,14 @@
 #include "../GfxCore/color.h"
 #include "../GfxCore/geom.h"
 
+#include <vector>
+
+#include <camera.h>
+
+#include "common.h"
+#include "assetLib.h"
+#include "window.h"
+
 struct light_t
 {
 	vec3f	pos;
@@ -14,12 +22,12 @@ struct light_t
 	Color	color;
 };
 
-class Scene
+class RtScene
 {
 public:
-	std::vector<ModelInstance>	models;
-	std::vector<light_t>		lights;
-	AABB						aabb;	// TODO: Replace with bvh tree
+	std::vector<RtModel>	models;
+	std::vector<light_t>	lights;
+	AABB					aabb;	// TODO: Replace with bvh tree
 };
 
 

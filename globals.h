@@ -52,30 +52,6 @@ enum axisMode_t : uint32_t
 };
 
 
-enum hitCode_t : uint32_t
-{
-	HIT_NONE,
-	HIT_SKY,
-	HIT_AABB,
-	HIT_FRONTFACE,
-	HIT_BACKFACE,
-};
-
-
-struct sample_t
-{
-	Color		color;
-	Color		albedo;
-	vec3f		pt;
-	vec3f		normal;
-	float		t;
-	float		surfaceDot;
-	uint32_t	modelIx;
-	hitCode_t	hitCode;
-	int32_t		materialId;
-};
-
-
 struct debug_t
 {
 	Image<Color> diffuse;
