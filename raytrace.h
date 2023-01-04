@@ -3,8 +3,11 @@
 #include <assert.h> 
 #include <float.h>
 #include <cstdint>
-#include "../GfxCore/ray.h"
-#include "../GfxCore/common.h"
+#include "../GfxCore/src/primitives/ray.h"
+#include "../GfxCore/src/core/common.h"
+#include "../GfxCore/src/image/color.h"
+#include "../GfxCore/src/image/image.h"
+#include "../GfxCore/src/math/mathvector.h"
 
 enum hitCode_t : uint32_t
 {
