@@ -1,13 +1,14 @@
-#include "../GfxCore/bitmap.h"
-#include "../GfxCore/mathVector.h"
-#include "../GfxCore/matrix.h"
-#include "../GfxCore/image.h"
+#include <image/bitmap.h>
+#include <math/vector.h>
+#include <math/matrix.h>
+#include <image/image.h>
+#include <scene/resourceManager.h>
+#include <acceleration/octree.h>
+#include <core/util.h>
+#include <core/rasterLib.h>
 #include "scene.h"
 #include "debug.h"
 #include "globals.h"
-#include "../GfxCore/resourceManager.h"
-#include "../GfxCore/octree.h"
-#include "../GfxCore/util.h"
 
 Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
 

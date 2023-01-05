@@ -13,7 +13,7 @@
 #include <thread>
 #include <image/bitmap.h>
 #include <image/color.h>
-#include <math/mathVector.h>
+#include <math/vector.h>
 #include <math/matrix.h>
 #include <io/meshIO.h>
 #include <primitives/geom.h>

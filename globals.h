@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../GfxCore/bitmap.h"
-#include "../GfxCore/mathVector.h"
-#include "../GfxCore/matrix.h"
-#include "../GfxCore/color.h"
-#include "../GfxCore/image.h"
+#include <image/bitmap.h>
+#include <image/image.h>
+#include <image/color.h>
+#include <math/vector.h>
+#include <math/matrix.h>
 #include "debug.h"
 
 #define USE_AABB		1

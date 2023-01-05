@@ -10,22 +10,23 @@
 #include <tuple>
 #include <map>
 #include <thread>
-#include "../GfxCore/bitmap.h"
-#include "../GfxCore/color.h"
-#include "../GfxCore/mathVector.h"
-#include "../GfxCore/matrix.h"
-#include "../GfxCore/meshIO.h"
-#include "../GfxCore/geom.h"
-#include "../GfxCore/resourceManager.h"
-#include "../GfxCore/camera.h"
-#include "../GfxCore/image.h"
-#include "../GfxCore/rasterLib.h"
-#include "../GfxCore/util.h"
+#include <image/bitmap.h>
+#include <image/image.h>
+#include <image/color.h>
+#include <math/vector.h>
+#include <math/matrix.h>
+#include <io/meshIO.h>
+#include <primitives/geom.h>
+#include <scene/resourceManager.h>
+#include <scene/camera.h>
+#include <core/rasterLib.h>
+#include <core/util.h>
 #include "scene.h"
 #include "debug.h"
 #include "globals.h"
 #include "timer.h"
 #include "raytrace.h"
+
 
 extern debug_t			dbg;
 extern ResourceManager	rm;
