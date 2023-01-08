@@ -40,13 +40,13 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -79,10 +79,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>..\GfxCore\src;$(IncludePath)</IncludePath>
+    <TargetExt>.lib</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\GfxCore\src;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\GfxCore\src;C:\Users\thoma\source\repos\SysCore;$(IncludePath)</IncludePath>
+    <TargetExt>.lib</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -148,18 +150,6 @@
       <AdditionalDependencies>GfxCore.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="rasterizer.cpp" />
-    <ClCompile Include="raytrace.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="debug.h" />
-    <ClInclude Include="globals.h" />
-    <ClInclude Include="raytrace.h" />
-    <ClInclude Include="scene.h" />
-    <ClInclude Include="timer.h" />
-  </ItemGroup>
   <ItemGroup>
     <Resource Include="models\arma.obj">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -272,6 +262,26 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </Resource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GfxCore\GfxCore.vcxproj">
+      <Project>{3de9a00c-b04b-43ab-943d-1973c47dece3}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\SysCore\SysCore\SysCore.vcxproj">
+      <Project>{01728a43-da97-4bc6-8edf-f17cb75e7967}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="raytracer\main.cpp" />
+    <ClCompile Include="raytracer\rasterizer.cpp" />
+    <ClCompile Include="raytracer\raytrace.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="raytracer\debug.h" />
+    <ClInclude Include="raytracer\globals.h" />
+    <ClInclude Include="raytracer\material.h" />
+    <ClInclude Include="raytracer\raytrace.h" />
+    <ClInclude Include="raytracer\scene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -6,13 +6,8 @@
 #include <math/vector.h>
 #include <math/matrix.h>
 #include <primitives/geom.h>
+#include <scene/scene.h>
 
-struct light_t
-{
-	vec3f	pos;
-	vec3f	intensity;
-	Color	color;
-};
 
 class RtScene
 {
@@ -23,7 +18,7 @@ public:
 };
 
 
-class SceneView
+class RtView
 {
 public:
 	Camera		camera;

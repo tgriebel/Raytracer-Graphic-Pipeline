@@ -8,12 +8,12 @@
 #include "debug.h"
 
 #define USE_AABB		1
-#define USE_RELFECTION	1
-#define USE_SHADOWS		1
+#define USE_RELFECTION	0
+#define USE_SHADOWS		0
 #define USE_RAYTRACE	1
 #define USE_SSRAND		0 // TODO: Halton sequence
 #define USE_SS4X		0
-#define USE_RASTERIZE	0
+#define USE_RASTERIZE	1
 #define DRAW_WIREFRAME	1
 #define	DRAW_AABB		1
 #define PHONG_NORMALS	1

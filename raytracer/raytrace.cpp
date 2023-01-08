@@ -21,17 +21,16 @@
 #include <scene/camera.h>
 #include <core/rasterLib.h>
 #include <core/util.h>
-#include "scene.h"
+#include <resource_types/texture.h>
+#include <resource_types/material.h>
 #include "debug.h"
 #include "globals.h"
-#include "timer.h"
 #include "raytrace.h"
-
+#include "scene.h"
 
 extern debug_t			dbg;
-extern ResourceManager	rm;
-extern RtScene			scene;
-extern SceneView		views[ 4 ];
+extern Scene			scene;
+extern RtView			rtViews[ 4 ];
 extern debug_t			dbg;
 extern Image<Color>		colorBuffer;
 extern Image<float>		depthBuffer;
@@ -59,9 +58,9 @@ sample_t RecordSkyInfo( const Ray& r, const float t )
 }
 
 
-sample_t RecordSurfaceInfo( const Ray& r, const float t, const uint32_t triIndex, const uint32_t modelIx )
+sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene, const uint32_t triIndex, const uint32_t modelIx )
 {
-	const RtModel& model = scene.models[ modelIx ];
+	const RtModel& model = rtScene.models[ modelIx ];
 	const std::vector<Triangle>& triCache = model.triCache;
 	const Triangle& tri = triCache[ triIndex ];
 
@@ -88,13 +87,22 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const uint32_t triIndex
 
 	sample.materialId = tri.materialId;
 
-	const material_t* material = rm.GetMaterialRef( sample.materialId );
+	const Material* material = scene.materialLib.Find( sample.materialId );
 	if ( ( material != nullptr ) && material->textured )
 	{
-		const Image<Color>* texture = rm.GetImageRef( material->colorMapId );
+		const texture_t* texture = nullptr;//scene.textureLib.Find( material->textures[0] );
 		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
-		sample.albedo = texture->GetPixel( static_cast<int32_t>( uv[ 0 ] * texture->GetWidth() ),
-			static_cast<int32_t>( uv[ 1 ] * texture->GetHeight() ) );
+		vec2i tc;
+		tc[0] = static_cast<int32_t>( uv[ 0 ] * texture->info.width );
+		tc[1] = static_cast<int32_t>( uv[ 1 ] * texture->info.height );
+
+		RGBA rgba;	
+		rgba.r = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 0 ];
+		rgba.g = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 1 ];
+		rgba.b = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 2 ];
+		rgba.a = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 3 ];
+
+		sample.albedo = Color( Pixel( rgba ).r8g8b8a8 );
 	}
 
 	sample.surfaceDot = Dot( r.GetVector(), sample.normal );
@@ -113,17 +121,17 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const uint32_t triIndex
 }
 
 
-bool IntersectScene( const Ray& ray, const bool cullBackfaces, const bool stopAtFirstIntersection, sample_t& outSample )
+bool IntersectScene( const Ray& ray, const RtScene& rtScene, const bool cullBackfaces, const bool stopAtFirstIntersection, sample_t& outSample )
 {
 	outSample.t = FLT_MAX;
 	outSample.hitCode = HIT_NONE;
 
 	int hitCnt = 0;
 
-	const uint32_t modelCnt = static_cast<uint32_t>( scene.models.size() );
+	const uint32_t modelCnt = static_cast<uint32_t>( rtScene.models.size() );
 	for ( uint32_t modelIx = 0; modelIx < modelCnt; ++modelIx )
 	{
-		const RtModel& model = scene.models[ modelIx ];
+		const RtModel& model = rtScene.models[ modelIx ];
 
 #if USE_AABB
 		float t0 = 0.0;
@@ -156,7 +164,7 @@ bool IntersectScene( const Ray& ray, const bool cullBackfaces, const bool stopAt
 				if ( cullBackfaces && isBackface )
 					continue;
 
-				outSample = RecordSurfaceInfo( ray, t, triIx, modelIx );
+				outSample = RecordSurfaceInfo( ray, t, rtScene, triIx, modelIx );
 
 				if ( stopAtFirstIntersection )
 					return true;
@@ -168,7 +176,7 @@ bool IntersectScene( const Ray& ray, const bool cullBackfaces, const bool stopAt
 }
 
 
-sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
+sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayDepth )
 {
 	float tnear = 0;
 	float tfar = 0;
@@ -178,14 +186,14 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 	sample.hitCode = HIT_NONE;
 
 #if USE_AABB
-	if ( !scene.aabb.Intersect( ray, tnear, tfar ) )
+	if ( !rtScene.aabb.Intersect( ray, tnear, tfar ) )
 	{
 		return sample;
 	}
 #endif
 
 	sample_t surfaceSample;
-	if ( !IntersectScene( ray, true, false, surfaceSample ) )
+	if ( !IntersectScene( ray, rtScene, true, false, surfaceSample ) )
 	{
 		sample = RecordSkyInfo( ray, surfaceSample.t );
 		return sample;
@@ -193,15 +201,15 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 	else
 	{
 		Color finalColor = Color::Black;
-		const material_t& material = *rm.GetMaterialRef( surfaceSample.materialId );
-		Color surfaceColor = material.textured ? surfaceSample.albedo : surfaceSample.color;
+		const Material* material = scene.materialLib.Find( surfaceSample.materialId );
+		Color surfaceColor = material->textured ? surfaceSample.albedo : surfaceSample.color;
 
 		vec3f viewVector = ray.GetVector().Reverse();
 		viewVector = viewVector.Normalize();
 
 		Color relfectionColor = Color::Black;
 #if USE_RELFECTION
-		if ( ( rayDepth < MaxBounces ) && ( material.Tr > 0.0 ) )
+		if ( ( rayDepth < MaxBounces ) && ( material->Tr > 0.0 ) )
 		{
 			vec3f reflectVector = ReflectVector( surfaceSample.normal, viewVector );
 			reflectVector += RandomVector( 0.1f );
@@ -209,8 +217,8 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 
 			Ray reflectionRay = Ray( surfaceSample.pt, surfaceSample.pt + reflectVector );
 
-			const sample_t reflectSample = RayTrace_r( reflectionRay, rayDepth + 1 );
-			relfectionColor = material.Tr * reflectSample.color;
+			const sample_t reflectSample = RayTrace_r( reflectionRay, rtScene, rayDepth + 1 );
+			relfectionColor = material->Tr * reflectSample.color;
 
 			sample = surfaceSample;
 			sample.color = relfectionColor;
@@ -219,17 +227,17 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 		}
 #endif
 
-		const size_t lightCnt = scene.lights.size();
+		const size_t lightCnt = rtScene.lights.size();
 		for ( size_t li = 0; li < lightCnt; ++li )
 		{
-			light_t& L = scene.lights[ li ];
-			vec3f& lightPos = L.pos;
+			const light_t& L = rtScene.lights[ li ];
+			vec3f lightPos = Trunc<4,1>( L.lightPos );
 
 			Ray shadowRay = Ray( surfaceSample.pt, lightPos );
 
 			sample_t shadowSample;
 #if USE_SHADOWS
-			const bool lightOccluded = IntersectScene( shadowRay, true, true, shadowSample );
+			const bool lightOccluded = IntersectScene( shadowRay, rtScene, true, true, shadowSample );
 #else
 			const bool lightOccluded = false;
 #endif
@@ -237,19 +245,19 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 			Color shadingColor = Color::Black;
 			if ( !lightOccluded )
 			{
-				const vec4f intensity = vec4f( L.intensity, 1.0f );
+				const vec4f intensity = L.intensity;
 
 				vec3f lightDir = shadowRay.GetVector();
 				lightDir = lightDir.Normalize();
 
 				const vec3f halfVector = ( viewVector + lightDir ).Normalize();
 
-				const vec4f D = ColorToVector( Color( material.Kd ) );
-				const vec4f S = ColorToVector( Color( material.Ks ) );
+				const vec4f D = ColorToVector( Color( material->Kd ) );
+				const vec4f S = ColorToVector( Color( material->Ks ) );
 
 				const vec4f diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0f, Dot( lightDir, surfaceSample.normal ) );
 
-				const vec4f specularIntensity = Multiply( S, intensity ) * pow( std::max( 0.0f, Dot( surfaceSample.normal, halfVector ) ), material.Ns );
+				const vec4f specularIntensity = Multiply( S, intensity ) * pow( std::max( 0.0f, Dot( surfaceSample.normal, halfVector ) ), material->Ns );
 
 				shadingColor += Vec4ToColor( specularIntensity );
 				shadingColor += Vec4ToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
@@ -258,7 +266,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 			finalColor += shadingColor + relfectionColor;
 		}
 
-		const Color ambient = AmbientLight * ( Color( material.Ka ) * surfaceColor );
+		const Color ambient = AmbientLight * ( Color( material->Ka ) * surfaceColor );
 
 		sample = surfaceSample;
 		sample.color = finalColor + ambient;
@@ -269,7 +277,7 @@ sample_t RayTrace_r( const Ray& ray, const uint32_t rayDepth )
 }
 
 
-void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, const uint32_t py )
+void TracePixel( const RtView& view, const RtScene& rtScene, Image<Color>& image, const uint32_t px, const uint32_t py )
 {
 #if	USE_SSRAND
 	const uint32_t subSampleCnt = 100;
@@ -303,29 +311,7 @@ void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, 
 
 		Ray ray = view.camera.GetViewRay( uv );
 
-		//////////////////////////////////////////////////////////////////////////////////////////////////////
-		// Experimental
-		const vec3f up = vec3f( 0.0, 0.0, 1.0 );
-		const vec3f z = ray.GetVector();
-		const vec3f x = Cross( up, z );
-		const vec3f y = Cross( x, z );
-
-		float e0, e1;
-		RandomPointOnCircle( e0, e1 );
-		const vec4f r = vec4f( e0, e1, 0.0, 0.0 );
-
-		const mat4x4f m = CreateMatrix4x4( x[ 0 ], x[ 1 ], x[ 2 ], 0.0f,
-			y[ 0 ], y[ 1 ], y[ 2 ], 0.0f,
-			z[ 0 ], z[ 1 ], z[ 2 ], 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f );
-
-		const vec4f perturb = m * r;
-
-		//ray.d = ray.d + Trunc<4,1>( 0.01 * perturb );
-		//assert( ( Dot( x, z ) < 1e6 ) && ( Dot( x, y ) < 1e6 ) && ( Dot( y, z ) < 1e6 ) );
-		//////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		sample = RayTrace_r( ray, 0 );
+		sample = RayTrace_r( ray, rtScene, 0 );
 		pixelColor += sample.color;
 		diffuse += sample.surfaceDot;
 		normal += sample.normal;
@@ -359,7 +345,7 @@ void TracePixel( const SceneView& view, Image<Color>& image, const uint32_t px, 
 }
 
 
-void TracePatch( const SceneView& view, Image<Color>* image, const vec2i& p0, const vec2i& p1 )
+void TracePatch( const RtView& view, const RtScene& rtScene, Image<Color>* image, const vec2i& p0, const vec2i& p1 )
 {
 	const int32_t x0 = p0[ 0 ];
 	const int32_t y0 = p0[ 1 ];
@@ -380,7 +366,41 @@ void TracePatch( const SceneView& view, Image<Color>* image, const vec2i& p0, co
 			if ( px >= image->GetWidth() )
 				return;
 
-			TracePixel( view, *image, px, py );
+			TracePixel( view, rtScene, *image, px, py );
 		}
 	}
+}
+
+
+void TraceScene( const RtView& view, const RtScene& rtScene, Image<Color>& image )
+{
+#if USE_RAYTRACE
+	uint32_t threadsLaunched = 0;
+	uint32_t threadsComplete = 0;
+	std::vector<std::thread> threads;
+
+	uint32_t renderWidth = view.targetSize[ 0 ];
+	uint32_t renderHeight = view.targetSize[ 1 ];
+
+	const uint32_t patchSize = 120;
+	for ( uint32_t py = 0; py < renderHeight; py += patchSize )
+	{
+		for ( uint32_t px = 0; px < renderWidth; px += patchSize )
+		{
+			vec2i patch;
+			patch[ 0 ] = Clamp( px + patchSize, px, renderWidth );
+			patch[ 1 ] = Clamp( py + patchSize, py, renderHeight );
+
+			threads.push_back( std::thread( TracePatch, view, rtScene, &image, vec2i( px, py ), patch ) );
+			++threadsLaunched;
+		}
+	}
+
+	for ( auto& thread : threads )
+	{
+		thread.join(); // TODO: replace with non-blocking call for better messaging
+		++threadsComplete;
+		std::cout << static_cast<int>( 100.0 * ( threadsComplete / (float)threadsLaunched ) ) << "% ";
+	}
+#endif
 }

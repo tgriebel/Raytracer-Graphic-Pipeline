@@ -23,9 +23,9 @@
 #include <core/rasterLib.h>
 #include <core/util.h>
 #include "scene.h"
+#include "../../SysCore/SysCore/timer.h"
 #include "debug.h"
 #include "globals.h"
-#include "timer.h"
 #include "raytrace.h"
 
 ResourceManager	rm;
@@ -34,23 +34,23 @@ matHdl_t		colorMaterialId = 16;
 matHdl_t		diffuseMaterialId = 17;
 matHdl_t		mirrorMaterialId = 18;
 
-RtScene			scene;
-SceneView		views[4];
+RtScene			rtScene;
+RtView			rtViews[4];
 debug_t			dbg;
 Image<Color>	colorBuffer;
 Image<float>	depthBuffer;
 
 extern Image<float> zBuffer;
 
-void RasterScene( Image<Color>& image, const SceneView& view, bool wireFrame = true );
+void RasterScene( Image<Color>& image, const RtView& view, bool wireFrame = true );
 
 void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap );
 void ImageToBitmap( const Image<float>& image, Bitmap& bitmap );
 void BitmapToImage( const Bitmap& bitmap, Image<Color>& image );
 
-SceneView SetupFrontView()
+RtView SetupFrontView()
 {
-	SceneView view;
+	RtView view;
 
 	view.targetSize = RenderSize;
 	view.camera.Init(	vec4f( -280.0f, -30.0f, 50.0f, 0.0f ),
@@ -71,9 +71,9 @@ SceneView SetupFrontView()
 }
 
 
-SceneView SetupTopView()
+RtView SetupTopView()
 {
-	SceneView view;
+	RtView view;
 
 	view.targetSize = RenderSize;
 	view.camera.Init(	vec4f( 0.0f, 0.0f, 280.0f, 0.0f ),
@@ -94,9 +94,9 @@ SceneView SetupTopView()
 }
 
 
-SceneView SetupSideView()
+RtView SetupSideView()
 {
-	SceneView view;
+	RtView view;
 
 	view.targetSize = RenderSize;
 	view.camera.Init(	vec4f( 0.0f, 280.0f, 0.0f, 0.0f ),
@@ -119,58 +119,23 @@ SceneView SetupSideView()
 
 void SetupViews()
 {
-	views[ VIEW_CAMERA ] = SetupFrontView();
-	views[ VIEW_FRONT ] = SetupFrontView();
-	views[ VIEW_TOP ] = SetupTopView();
-	views[ VIEW_SIDE ] = SetupSideView();
+	rtViews[ VIEW_CAMERA ] = SetupFrontView();
+	rtViews[ VIEW_FRONT ] = SetupFrontView();
+	rtViews[ VIEW_TOP ] = SetupTopView();
+	rtViews[ VIEW_SIDE ] = SetupSideView();
 }
 
 
-void TraceScene( const SceneView& view, Image<Color>& image )
-{
-#if USE_RAYTRACE
-
-	uint32_t threadsLaunched = 0;
-	uint32_t threadsComplete = 0;
-	std::vector<std::thread> threads;
-
-	uint32_t renderWidth = view.targetSize[ 0 ];
-	uint32_t renderHeight = view.targetSize[ 1 ];
-
-	const uint32_t patchSize = 120;
-	for ( uint32_t py = 0; py < renderHeight; py += patchSize )
-	{
-		for ( uint32_t px = 0; px < renderWidth; px += patchSize )
-		{
-			vec2i patch;
-			patch[ 0 ] = Clamp( px + patchSize, px, renderWidth );
-			patch[ 1 ] = Clamp( py + patchSize, py, renderHeight );
-
-			threads.push_back( std::thread( TracePatch, view, &image, vec2i( px, py ), patch ) );
-			++threadsLaunched;
-		}
-	}
-
-	for ( auto& thread : threads )
-	{
-		thread.join(); // TODO: replace with non-blocking call for better messaging
-		++threadsComplete;
-		std::cout << static_cast<int>( 100.0 * ( threadsComplete / (float)threadsLaunched ) ) << "% ";
-	}
-#endif
-}
-
-
-void RastizeViews()
+void RasterizeViews()
 {
 #if USE_RASTERIZE
-	RasterScene( colorBuffer, views[ VIEW_FRONT ], false );
+	RasterScene( colorBuffer, rtViews[ VIEW_FRONT ], false );
 #endif
 
 #if DRAW_WIREFRAME
-	RasterScene( dbg.wireframe, views[ VIEW_FRONT ] );
-	RasterScene( dbg.topWire, views[ VIEW_TOP ] );
-	RasterScene( dbg.sideWire, views[ VIEW_SIDE ] );
+	RasterScene( dbg.wireframe, rtViews[ VIEW_FRONT ] );
+	RasterScene( dbg.topWire, rtViews[ VIEW_TOP ] );
+	RasterScene( dbg.sideWire, rtViews[ VIEW_SIDE ] );
 #endif
 }
 
@@ -214,42 +179,34 @@ void CreateMaterials( ResourceManager& rm )
 {
 	for( uint32_t i = 0; i < 16; ++i )
 	{
-		material_t dbgMaterial;
-		memset( &dbgMaterial, 0, sizeof( material_t ) );
+		Material dbgMaterial;
 		dbgMaterial.Ka = Color( 1.0f ).AsRGBf();
 		dbgMaterial.Kd = Color( DbgColors[ i ] ).AsRGBf();
 		dbgMaterial.Ks = Color( 0.0f ).AsRGBf();
 		dbgMaterial.Ke = Color( 0.0f ).AsRGBf();
 		dbgMaterial.Tr = 0.0f;
-		rm.StoreMaterialCopy( dbgMaterial );
 	}
 
-	material_t colorMaterial;
-	memset( &colorMaterial, 0, sizeof( material_t ) );
+	Material colorMaterial;
 	colorMaterial.Ka = Color( 1.0f ).AsRGBf();
 	colorMaterial.Kd = Color( 1.0f ).AsRGBf();
 	colorMaterial.Ks = Color( 0.0f ).AsRGBf();
 	colorMaterial.Ke = Color( 0.0f ).AsRGBf();
 	colorMaterial.Tr = 0.0f;
-	rm.StoreMaterialCopy( colorMaterial );
 
-	material_t diffuseMaterial;
-	memset( &diffuseMaterial, 0, sizeof( material_t ) );
+	Material diffuseMaterial;
 	diffuseMaterial.Ka = Color( 1.0f ).AsRGBf();
 	diffuseMaterial.Kd = Color( 1.0f ).AsRGBf();
 	diffuseMaterial.Ks = Color( 1.0f ).AsRGBf();
 	diffuseMaterial.Ke = Color( 1.0f ).AsRGBf();
 	diffuseMaterial.Tr = 0.0f;
-	rm.StoreMaterialCopy( diffuseMaterial );
 
-	material_t mirrorMaterial;
-	memset( &mirrorMaterial, 0, sizeof( material_t ) );
+	Material mirrorMaterial;
 	mirrorMaterial.Ka = Color( 1.0f ).AsRGBf();
 	mirrorMaterial.Kd = Color( 1.0f ).AsRGBf();
 	mirrorMaterial.Ks = Color( 1.0f ).AsRGBf();
 	mirrorMaterial.Ke = Color( 1.0f ).AsRGBf();
 	mirrorMaterial.Tr = 0.8f;
-	rm.StoreMaterialCopy( mirrorMaterial );
 }
 
 
@@ -268,12 +225,12 @@ void BuildScene()
 		RtModel teapot0;
 		modelMatrix = BuildModelMatrix( vec3f( 30.0, 120.0, 10.0 ), vec3f( 0.0, 0.0, -90.0 ), 1.0, RHS_XZY );
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Yellow, &teapot0, colorMaterialId );
-		scene.models.push_back( teapot0 );
+		rtScene.models.push_back( teapot0 );
 		
 		RtModel teapot1;
 		modelMatrix = BuildModelMatrix( vec3f( -30.0, -50.0, 10.0 ), vec3f( 0.0, 0.0, 30.0 ), 1.0, RHS_XZY );
 		CreateModelInstance( modelIx, modelMatrix, true, Color::Green, &teapot1, colorMaterialId );
-		scene.models.push_back( teapot1 );
+		rtScene.models.push_back( teapot1 );
 	}
 	*/
 
@@ -288,22 +245,22 @@ void BuildScene()
 		RtModel sphere0;
 		modelMatrix = BuildModelMatrix( vec3f( 30.0f, -70.0f, 0.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 0.5f, RHS_XZY );
 		CreateRayTraceModel( rm, modelIx, modelMatrix, true, Color::White, &sphere0, mirrorMaterialId );
-		scene.models.push_back( sphere0 );
+		rtScene.models.push_back( sphere0 );
 
 		RtModel sphere1;
 		modelMatrix = BuildModelMatrix( vec3f( 30.0f, -20.0f, 0.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 0.5f, RHS_XZY );
 		CreateRayTraceModel( rm, modelIx, modelMatrix, true, Color::Red, &sphere1 );
-		scene.models.push_back( sphere1 );
+		rtScene.models.push_back( sphere1 );
 
 		RtModel sphere2;
 		modelMatrix = BuildModelMatrix( vec3f( 30.0f, 30.0f, 0.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 0.5f, RHS_XZY );
 		CreateRayTraceModel( rm, modelIx, modelMatrix, true, Color::White, &sphere2, mirrorMaterialId );
-		scene.models.push_back( sphere2 );
+		rtScene.models.push_back( sphere2 );
 
 		RtModel sphere3;
 		modelMatrix = BuildModelMatrix( vec3f( 30.0f, 80.0f, 0.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 0.5f, RHS_XZY );
 		CreateRayTraceModel( rm, modelIx, modelMatrix, true, Color::White, &sphere3, mirrorMaterialId );
-		scene.models.push_back( sphere3 );
+		rtScene.models.push_back( sphere3 );
 	}
 
 	/*
@@ -315,12 +272,12 @@ void BuildScene()
 		RtModel skull0;
 		modelMatrix = BuildModelMatrix( vec3f( 30.0, 120.0, 10.0 ), vec3f( 0.0, 90.0, 40.0 ), 4.0, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Gold, &skull0 );
-		scene.models.push_back( skull0 );
+		rtScene.models.push_back( skull0 );
 
 		RtModel skull1;
 		modelMatrix = BuildModelMatrix( vec3f( -30.0, -120.0, -10.0 ), vec3f( 0.0, 90.0, 0.0 ), 5.0, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Gold, &skull1 );
-		scene.models.push_back( skull1 );
+		rtScene.models.push_back( skull1 );
 	}
 	*/
 
@@ -333,7 +290,7 @@ void BuildScene()
 		RtModel car0;
 		modelMatrix = BuildModelMatrix( vec3f( -30.0, -100.0, -10.0 ), vec3f( 0.0, 0.0, 0.0 ), 30.0, RHS_XZY );
 		CreateModelInstance( rm, modelIx, modelMatrix, true, Color::Red, &car0 );
-		scene.models.push_back( car0 );
+		rtScene.models.push_back( car0 );
 	}
 	*/
 
@@ -345,32 +302,32 @@ void BuildScene()
 		RtModel plane0;
 		modelMatrix = BuildModelMatrix( vec3f( 0.0f, 0.0f, -10.0f ), vec3f( 0.0f, 0.0f, 0.0f ), 1.0f, RHS_XYZ );
 		CreateRayTraceModel( rm, modelIx, modelMatrix, false, Color::DGrey, &plane0, colorMaterialId );
-		scene.models.push_back( plane0 );
+		rtScene.models.push_back( plane0 );
 	}
 
-	scene.lights.reserve( 3 );
+	rtScene.lights.reserve( 3 );
 	{
 		light_t l;
-		l.pos = vec3f( -200.0f, -100.0f, 50.0f );
-		l.intensity = vec3f( 1.0f, 1.0f, 1.0f );
-		scene.lights.push_back( l );
+		l.lightPos = vec4f( -200.0f, -100.0f, 50.0f, 1.0f );
+		l.intensity = vec4f( 1.0f, 1.0f, 1.0f, 1.0f );
+		rtScene.lights.push_back( l );
 		/*
 		l.pos = vec3f( 150, 20.0, 0.0 );
 		l.intensity = vec3f( 0.0, 1.0, 0.0 );
-		scene.lights.push_back( l );
+		rtScene.lights.push_back( l );
 
 		l.pos = vec3f( 20.0, 150.0, 25.0 );
 		l.intensity = vec3f( 0.0, 0.0, 1.0 );
-		scene.lights.push_back( l );
+		rtScene.lights.push_back( l );
 		*/
 	}
 
-	const size_t modelCnt = scene.models.size();
+	const size_t modelCnt = rtScene.models.size();
 	for ( size_t m = 0; m < modelCnt; ++m )
 	{
-		RtModel& model = scene.models[ m ];
-		scene.aabb.Expand( model.octree.GetAABB().min );
-		scene.aabb.Expand( model.octree.GetAABB().max );
+		RtModel& model = rtScene.models[ m ];
+		rtScene.aabb.Expand( model.octree.GetAABB().min );
+		rtScene.aabb.Expand( model.octree.GetAABB().max );
 	}
 }
 
@@ -419,7 +376,7 @@ void WriteImage( const Image<T>& image, const std::string& path, const int32_t n
 }
 
 
-int main(void)
+int raytracemain(void)
 {
 	std::cout << "Running Raytracer/Rasterizer" << std::endl;
 
@@ -453,10 +410,10 @@ int main(void)
 		Timer traceTimer;
 
 		traceTimer.Start();
-		TraceScene( views[ VIEW_CAMERA ], frameBuffer );
+		TraceScene( rtViews[ VIEW_CAMERA ], rtScene, frameBuffer );
 		traceTimer.Stop();
 
-		RastizeViews();
+		RasterizeViews();
 
 		std::cout << "\n\nTrace Time: " << traceTimer.GetElapsed() << "ms" << std::endl;
 
