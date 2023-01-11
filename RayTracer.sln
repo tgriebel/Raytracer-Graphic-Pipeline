@@ -16,12 +16,16 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Converter", "..\Converter\C
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GfxCore", "..\GfxCore\GfxCore.vcxproj", "{3DE9A00C-B04B-43AB-943D-1973C47DECE3}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SysCore", "..\SysCore\SysCore\SysCore.vcxproj", "{01728A43-DA97-4BC6-8EDF-F17CB75E7967}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		Test (Debug)|x64 = Test (Debug)|x64
+		Test (Debug)|x86 = Test (Debug)|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5A3A1D7E-43F5-41D1-AF37-D75DFD0DBC49}.Debug|x64.ActiveCfg = Debug|x64
@@ -32,6 +36,10 @@ Global
 		{5A3A1D7E-43F5-41D1-AF37-D75DFD0DBC49}.Release|x64.Build.0 = Release|x64
 		{5A3A1D7E-43F5-41D1-AF37-D75DFD0DBC49}.Release|x86.ActiveCfg = Release|Win32
 		{5A3A1D7E-43F5-41D1-AF37-D75DFD0DBC49}.Release|x86.Build.0 = Release|Win32
+		{5A3A1D7E-43F5-41D1-AF37-D75DFD0DBC49}.Test (Debug)|x64.ActiveCfg = Test (Debug)|x64
+		{5A3A1D7E-43F5-41D1-AF37-D75DFD0DBC49}.Test (Debug)|x64.Build.0 = Test (Debug)|x64
+		{5A3A1D7E-43F5-41D1-AF37-D75DFD0DBC49}.Test (Debug)|x86.ActiveCfg = Test (Debug)|Win32
+		{5A3A1D7E-43F5-41D1-AF37-D75DFD0DBC49}.Test (Debug)|x86.Build.0 = Test (Debug)|Win32
 		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Debug|x64.ActiveCfg = Debug|x64
 		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Debug|x64.Build.0 = Debug|x64
 		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Debug|x86.ActiveCfg = Debug|Win32
@@ -40,6 +48,10 @@ Global
 		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Release|x64.Build.0 = Release|x64
 		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Release|x86.ActiveCfg = Release|Win32
 		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Release|x86.Build.0 = Release|Win32
+		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Test (Debug)|x64.ActiveCfg = Debug|x64
+		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Test (Debug)|x64.Build.0 = Debug|x64
+		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Test (Debug)|x86.ActiveCfg = Debug|Win32
+		{1D0EB6F0-A3E1-45BD-A87A-EF9A39C6CFE7}.Test (Debug)|x86.Build.0 = Debug|Win32
 		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Debug|x64.ActiveCfg = Debug|x64
 		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Debug|x64.Build.0 = Debug|x64
 		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Debug|x86.ActiveCfg = Debug|Win32
@@ -48,6 +60,22 @@ Global
 		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Release|x64.Build.0 = Release|x64
 		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Release|x86.ActiveCfg = Release|Win32
 		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Release|x86.Build.0 = Release|Win32
+		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Test (Debug)|x64.ActiveCfg = Test (Debug)|x64
+		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Test (Debug)|x64.Build.0 = Test (Debug)|x64
+		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Test (Debug)|x86.ActiveCfg = Test (Debug)|Win32
+		{3DE9A00C-B04B-43AB-943D-1973C47DECE3}.Test (Debug)|x86.Build.0 = Test (Debug)|Win32
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Debug|x64.ActiveCfg = Debug|x64
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Debug|x64.Build.0 = Debug|x64
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Debug|x86.ActiveCfg = Debug|Win32
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Debug|x86.Build.0 = Debug|Win32
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Release|x64.ActiveCfg = Release|x64
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Release|x64.Build.0 = Release|x64
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Release|x86.ActiveCfg = Release|Win32
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Release|x86.Build.0 = Release|Win32
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Test (Debug)|x64.ActiveCfg = Debug|x64
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Test (Debug)|x64.Build.0 = Debug|x64
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Test (Debug)|x86.ActiveCfg = Debug|Win32
+		{01728A43-DA97-4BC6-8EDF-F17CB75E7967}.Test (Debug)|x86.Build.0 = Debug|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

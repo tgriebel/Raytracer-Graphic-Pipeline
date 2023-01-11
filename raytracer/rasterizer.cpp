@@ -10,11 +10,12 @@
 #include "debug.h"
 #include "globals.h"
 
-Image<float> zBuffer( RenderWidth, RenderHeight, 1.0f, "_zbuffer" );
+Image<float> zBuffer( RenderWidth, RenderHeight, 0.0f, "_zbuffer" );
 
 extern Image<float> depthBuffer;
 extern ResourceManager rm;
-extern Scene scene;
+
+static Material DefaultMaterial;
 
 void OrthoMatrixToAxis( const mat4x4f& m, vec3f& origin, vec3f& xAxis, vec3f& yAxis, vec3f& zAxis );
 void DrawWorldAxis( Image<Color>& image, const RtView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z );
@@ -300,7 +301,7 @@ void RasterScene( Image<Color>& image, const RtView& view, const RtScene& rtScen
 
 						const float depth = (float)fragmentInput.clipPosition[ 2 ];
 
-						if ( depth >= zBuffer.GetPixel( x, y ) )
+						if ( depth < zBuffer.GetPixel( x, y ) )
 							continue;
 
 						const vec3f normal = fragmentInput.normal.Normalize();
@@ -318,7 +319,7 @@ void RasterScene( Image<Color>& image, const RtView& view, const RtScene& rtScen
 
 						Color surfaceColor = Color::Black;
 
-						const Material* material = scene.materialLib.Find( triCache[ i ].materialId );
+						const Material* material = rtScene.scene->materialLib.Find( triCache[ i ].materialId );
 
 						if( material->textured )
 						{

@@ -29,13 +29,16 @@
 #include "scene.h"
 
 extern debug_t			dbg;
-extern Scene			scene;
 extern RtView			rtViews[ 4 ];
 extern debug_t			dbg;
 extern Image<Color>		colorBuffer;
 extern Image<float>		depthBuffer;
 
 static Color skyColor = Color::Blue;
+
+static Material DefaultMaterial;
+
+void DrawRay( Image<Color>& image, const RtView& view, const Ray& ray, const Color& color );
 
 sample_t RecordSkyInfo( const Ray& r, const float t )
 {
@@ -87,20 +90,28 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene,
 
 	sample.materialId = tri.materialId;
 
-	const Material* material = scene.materialLib.Find( sample.materialId );
+	const Material* material = rtScene.scene->materialLib.Find( sample.materialId );
 	if ( ( material != nullptr ) && material->textured )
 	{
-		const texture_t* texture = nullptr;//scene.textureLib.Find( material->textures[0] );
+		const texture_t* texture = rtScene.scene->textureLib.Find( material->textures[0] );
 		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
 		vec2i tc;
-		tc[0] = static_cast<int32_t>( uv[ 0 ] * texture->info.width );
-		tc[1] = static_cast<int32_t>( uv[ 1 ] * texture->info.height );
+		tc[0] = static_cast<int32_t>( Saturate( uv[ 0 ] ) * texture->info.width );
+		tc[1] = static_cast<int32_t>( Saturate( uv[ 1 ] ) * texture->info.height );
 
-		RGBA rgba;	
-		rgba.r = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 0 ];
-		rgba.g = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 1 ];
-		rgba.b = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 2 ];
-		rgba.a = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 3 ];
+		RGBA rgba;
+		if( texture->info.channels >= 1 ) {
+			rgba.r = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 0 ];
+		}
+		if ( texture->info.channels >= 2 ) {
+			rgba.g = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 1 ];
+		}
+		if ( texture->info.channels >= 3 ) {
+			rgba.b = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 2 ];
+		}
+		if ( texture->info.channels >= 4 ) {
+			rgba.a = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 3 ];
+		}
 
 		sample.albedo = Color( Pixel( rgba ).r8g8b8a8 );
 	}
@@ -141,6 +152,7 @@ bool IntersectScene( const Ray& ray, const RtScene& rtScene, const bool cullBack
 			continue;
 		}
 #endif
+		outSample.hitCode = HIT_AABB;
 
 		const std::vector<Triangle>& triCache = model.triCache;
 		std::vector<uint32_t> triIndices;
@@ -172,7 +184,7 @@ bool IntersectScene( const Ray& ray, const RtScene& rtScene, const bool cullBack
 		}
 	}
 
-	return outSample.hitCode != HIT_NONE;
+	return ( outSample.hitCode != HIT_NONE ) && ( outSample.hitCode != HIT_AABB );
 }
 
 
@@ -201,8 +213,8 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 	else
 	{
 		Color finalColor = Color::Black;
-		const Material* material = scene.materialLib.Find( surfaceSample.materialId );
-		Color surfaceColor = material->textured ? surfaceSample.albedo : surfaceSample.color;
+		const Material* material = rtScene.scene->materialLib.Find( surfaceSample.materialId );
+		Color surfaceColor = ( material != nullptr && material->textured ) ? surfaceSample.albedo : surfaceSample.color;
 
 		vec3f viewVector = ray.GetVector().Reverse();
 		viewVector = viewVector.Normalize();
@@ -310,7 +322,9 @@ void TracePixel( const RtView& view, const RtScene& rtScene, Image<Color>& image
 		vec2f uv = vec2f( pixelXY[ 0 ] / ( view.targetSize[ 0 ] - 1.0f ), pixelXY[ 1 ] / ( view.targetSize[ 1 ] - 1.0f ) );
 
 		Ray ray = view.camera.GetViewRay( uv );
-
+		//DrawRay( dbg.topWire, rtViews[VIEW_TOP], ray, Color::Yellow );
+		//DrawRay( dbg.sideWire, rtViews[VIEW_SIDE], ray, Color::Yellow );
+		
 		sample = RayTrace_r( ray, rtScene, 0 );
 		pixelColor += sample.color;
 		diffuse += sample.surfaceDot;
