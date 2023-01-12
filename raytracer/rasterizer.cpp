@@ -323,8 +323,8 @@ void RasterScene( Image<Color>& image, const RtView& view, const RtScene& rtScen
 
 						if( material->textured )
 						{
-							//const Image<Color>* texture = scene.textureLib.Find( material->textures[0] );
-							surfaceColor = Color::Brown;//texture->GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] );
+							const Texture* texture = rtScene.scene->textureLib.Find( material->textures[0] );
+							surfaceColor = texture->cpuImage.GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] );
 						}
 						else
 						{

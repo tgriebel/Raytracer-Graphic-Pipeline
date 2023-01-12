@@ -93,27 +93,9 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene,
 	const Material* material = rtScene.scene->materialLib.Find( sample.materialId );
 	if ( ( material != nullptr ) && material->textured )
 	{
-		const texture_t* texture = rtScene.scene->textureLib.Find( material->textures[0] );
+		const Texture* texture = rtScene.scene->textureLib.Find( material->textures[0] );
 		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
-		vec2i tc;
-		tc[0] = static_cast<int32_t>( Saturate( uv[ 0 ] ) * texture->info.width );
-		tc[1] = static_cast<int32_t>( Saturate( uv[ 1 ] ) * texture->info.height );
-
-		RGBA rgba;
-		if( texture->info.channels >= 1 ) {
-			rgba.r = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 0 ];
-		}
-		if ( texture->info.channels >= 2 ) {
-			rgba.g = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 1 ];
-		}
-		if ( texture->info.channels >= 3 ) {
-			rgba.b = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 2 ];
-		}
-		if ( texture->info.channels >= 4 ) {
-			rgba.a = texture->bytes[ tc[ 0 ] + tc[ 1 ] * texture->info.width + 3 ];
-		}
-
-		sample.albedo = Color( Pixel( rgba ).r8g8b8a8 );
+		sample.albedo = texture->cpuImage.GetPixelUV( uv[ 0 ], uv[ 1 ] );
 	}
 
 	sample.surfaceDot = Dot( r.GetVector(), sample.normal );
@@ -135,7 +117,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene,
 bool IntersectScene( const Ray& ray, const RtScene& rtScene, const bool cullBackfaces, const bool stopAtFirstIntersection, sample_t& outSample )
 {
 	outSample.t = FLT_MAX;
-	outSample.hitCode = HIT_NONE;
+	outSample.hitCode = HIT_SKY;
 
 	int hitCnt = 0;
 
@@ -152,18 +134,18 @@ bool IntersectScene( const Ray& ray, const RtScene& rtScene, const bool cullBack
 			continue;
 		}
 #endif
-		outSample.hitCode = HIT_AABB;
+		if( outSample.hitCode == HIT_NONE ) {
+			outSample.hitCode = HIT_AABB;
+		}
 
 		const std::vector<Triangle>& triCache = model.triCache;
 		std::vector<uint32_t> triIndices;
 		model.octree.Intersect( ray, triIndices );
 
-		//const size_t triCnt = triCache.size();
 		const size_t triCnt = triIndices.size();
 		for ( size_t ix = 0; ix < triCnt; ++ix )
 		{
 			const uint32_t triIx = triIndices[ ix ];
-			// const uint32_t triIx = ix;
 			const Triangle& tri = triCache[ triIx ];
 
 			float t;
@@ -184,7 +166,7 @@ bool IntersectScene( const Ray& ray, const RtScene& rtScene, const bool cullBack
 		}
 	}
 
-	return ( outSample.hitCode != HIT_NONE ) && ( outSample.hitCode != HIT_AABB );
+	return ( outSample.hitCode != HIT_SKY ) && ( outSample.hitCode != HIT_AABB );
 }
 
 
@@ -208,6 +190,7 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 	if ( !IntersectScene( ray, rtScene, true, false, surfaceSample ) )
 	{
 		sample = RecordSkyInfo( ray, surfaceSample.t );
+		sample.color = Color::Green;
 		return sample;
 	}
 	else
