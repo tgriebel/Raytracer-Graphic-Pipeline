@@ -91,9 +91,9 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene,
 	sample.materialId = tri.materialId;
 
 	const Material* material = rtScene.scene->materialLib.Find( sample.materialId );
-	if ( ( material != nullptr ) && material->textured )
+	if ( ( material != nullptr ) && material->IsTextured() )
 	{
-		const Texture* texture = rtScene.scene->textureLib.Find( material->textures[0] );
+		const Texture* texture = rtScene.scene->textureLib.Find( material->GetTexture( GGX_COLOR_MAP_SLOT ) );
 		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
 		sample.albedo = texture->cpuImage.GetPixelUV( uv[ 0 ], uv[ 1 ] );
 	}
@@ -197,7 +197,7 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 	{
 		Color finalColor = Color::Black;
 		const Material* material = rtScene.scene->materialLib.Find( surfaceSample.materialId );
-		Color surfaceColor = ( material != nullptr && material->textured ) ? surfaceSample.albedo : surfaceSample.color;
+		Color surfaceColor = ( material != nullptr && material->IsTextured() ) ? surfaceSample.albedo : surfaceSample.color;
 
 		vec3f viewVector = ray.GetVector().Reverse();
 		viewVector = viewVector.Normalize();
