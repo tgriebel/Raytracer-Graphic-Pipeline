@@ -90,12 +90,12 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene,
 
 	sample.materialId = tri.materialId;
 
-	const Material* material = rtScene.scene->materialLib.Find( sample.materialId );
-	if ( ( material != nullptr ) && material->IsTextured() )
+	const Asset<Material>* material = rtScene.scene->materialLib.Find( sample.materialId );
+	if ( ( material != nullptr ) && material->Get().IsTextured() )
 	{
-		const Texture* texture = rtScene.scene->textureLib.Find( material->GetTexture( GGX_COLOR_MAP_SLOT ) );
+		const Texture& texture = rtScene.scene->textureLib.Find( material->Get().GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
 		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
-		sample.albedo = texture->cpuImage.GetPixelUV( uv[ 0 ], uv[ 1 ] );
+		sample.albedo = texture.cpuImage.GetPixelUV( uv[ 0 ], uv[ 1 ] );
 	}
 
 	sample.surfaceDot = Dot( r.GetVector(), sample.normal );
@@ -196,8 +196,8 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 	else
 	{
 		Color finalColor = Color::Black;
-		const Material* material = rtScene.scene->materialLib.Find( surfaceSample.materialId );
-		Color surfaceColor = ( material != nullptr && material->IsTextured() ) ? surfaceSample.albedo : surfaceSample.color;
+		const Asset<Material>* material = rtScene.scene->materialLib.Find( surfaceSample.materialId );
+		Color surfaceColor = ( material != nullptr && material->Get().IsTextured() ) ? surfaceSample.albedo : surfaceSample.color;
 
 		vec3f viewVector = ray.GetVector().Reverse();
 		viewVector = viewVector.Normalize();
@@ -247,12 +247,12 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 
 				const vec3f halfVector = ( viewVector + lightDir ).Normalize();
 
-				const vec4f D = ColorToVector( Color( material->Kd ) );
-				const vec4f S = ColorToVector( Color( material->Ks ) );
+				const vec4f D = ColorToVector( Color( material->Get().Kd ) );
+				const vec4f S = ColorToVector( Color( material->Get().Ks ) );
 
 				const vec4f diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0f, Dot( lightDir, surfaceSample.normal ) );
 
-				const vec4f specularIntensity = Multiply( S, intensity ) * pow( std::max( 0.0f, Dot( surfaceSample.normal, halfVector ) ), material->Ns );
+				const vec4f specularIntensity = Multiply( S, intensity ) * pow( std::max( 0.0f, Dot( surfaceSample.normal, halfVector ) ), material->Get().Ns );
 
 				shadingColor += Vec4ToColor( specularIntensity );
 				shadingColor += Vec4ToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
@@ -261,7 +261,7 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 			finalColor += shadingColor + relfectionColor;
 		}
 
-		const Color ambient = AmbientLight * ( Color( material->Ka ) * surfaceColor );
+		const Color ambient = AmbientLight * ( Color( material->Get().Ka ) * surfaceColor );
 
 		sample = surfaceSample;
 		sample.color = finalColor + ambient;

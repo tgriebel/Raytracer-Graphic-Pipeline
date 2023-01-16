@@ -319,31 +319,31 @@ void RasterScene( Image<Color>& image, const RtView& view, const RtScene& rtScen
 
 						Color surfaceColor = Color::Black;
 
-						const Material* material = rtScene.scene->materialLib.Find( triCache[ i ].materialId );
+						const Material& material = rtScene.scene->materialLib.Find( triCache[ i ].materialId )->Get();
 
-						if( material->IsTextured() )
+						if( material.IsTextured() )
 						{
-							const Texture* texture = rtScene.scene->textureLib.Find( material->GetTexture( GGX_COLOR_MAP_SLOT ) );
-							surfaceColor = texture->cpuImage.GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] );
+							const Texture& texture = rtScene.scene->textureLib.Find( material.GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
+							surfaceColor = texture.cpuImage.GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] );
 						}
 						else
 						{
 							surfaceColor += fragmentInput.color;
 						}
 
-						const vec4f D = ColorToVector( Color( material->Kd ) );
-						const vec4f S = ColorToVector( Color( material->Ks ) );
+						const vec4f D = ColorToVector( Color( material.Kd ) );
+						const vec4f S = ColorToVector( Color( material.Ks ) );
 
 						const vec4f diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0f, Dot( normal, lightDir ) );
-						const vec4f specularIntensity = S * pow( std::max( 0.0f, Dot( normal, halfVector ) ), material->Ns );
-						const Color ambient = AmbientLight * ( Color( material->Ka ) * surfaceColor );
+						const vec4f specularIntensity = S * pow( std::max( 0.0f, Dot( normal, halfVector ) ), material.Ns );
+						const Color ambient = AmbientLight * ( Color( material.Ka ) * surfaceColor );
 
 						Color shadingColor;
 						shadingColor = Vec4ToColor( specularIntensity );
 						shadingColor += Vec4ToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
 						shadingColor += ambient;
 
-						shadingColor = Vec3ToColor( BrdfGGX( normal, viewVector, lightDir, *material ) );
+						shadingColor = Vec3ToColor( BrdfGGX( normal, viewVector, lightDir, material ) );
 
 						const Color normalColor = Vec3ToColor( 0.5f * normal + vec3f( 0.5f ) );
 						
