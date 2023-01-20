@@ -219,7 +219,11 @@ void CreateMaterials( Scene& scene )
 
 void BuildRtSceneView( Scene& scene, RtScene& rtScene )
 {
-	hdl_t modelHdl = LoadRawModel( scene, "pawn.obj", "sphere", "models\\", "textures\\" );
+	hdl_t modelHdl;
+	Model model;
+	if( LoadRawModel( scene, "pawn.obj", "models\\", "textures\\", model ) ) {
+		modelHdl = scene.modelLib.Add( "sphere", model );
+	}
 	if( modelHdl != INVALID_HDL )
 	{
 		{
