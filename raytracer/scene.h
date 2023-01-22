@@ -16,6 +16,7 @@ public:
 	std::vector<light_t>	lights;
 	AABB					aabb;	// TODO: Replace with bvh tree
 	Scene*					scene;
+	AssetManager*			assets;
 };
 
 

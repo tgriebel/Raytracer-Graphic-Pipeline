@@ -18,6 +18,7 @@
 #include <io/meshIO.h>
 #include <primitives/geom.h>
 #include <scene/resourceManager.h>
+#include <scene/assetManager.h>
 #include <scene/camera.h>
 #include <image/image.h>
 #include <core/rasterLib.h>
@@ -175,7 +176,7 @@ mat4x4f BuildModelMatrix( const vec3f& origin, const vec3f& degressZYZ, const fl
 }
 
 
-void CreateMaterials( Scene& scene )
+void CreateMaterials( AssetManager& assets )
 {
 	for( uint32_t i = 0; i < 16; ++i )
 	{
@@ -188,7 +189,7 @@ void CreateMaterials( Scene& scene )
 
 		std::stringstream ss;
 		ss << "default_" << i;
-		scene.materialLib.Add( ss.str().c_str(), dbgMaterial );
+		assets.materialLib.Add( ss.str().c_str(), dbgMaterial );
 	}
 
 	Material colorMaterial;
@@ -197,7 +198,7 @@ void CreateMaterials( Scene& scene )
 	colorMaterial.Ks = Color( 0.0f ).AsRGBf();
 	colorMaterial.Ke = Color( 0.0f ).AsRGBf();
 	colorMaterial.Tr = 0.0f;
-	scene.materialLib.Add( "colorMaterial", colorMaterial );
+	assets.materialLib.Add( "colorMaterial", colorMaterial );
 
 	Material diffuseMaterial;
 	diffuseMaterial.Ka = Color( 1.0f ).AsRGBf();
@@ -205,7 +206,7 @@ void CreateMaterials( Scene& scene )
 	diffuseMaterial.Ks = Color( 1.0f ).AsRGBf();
 	diffuseMaterial.Ke = Color( 1.0f ).AsRGBf();
 	diffuseMaterial.Tr = 0.0f;
-	scene.materialLib.Add( "diffuseMaterial", diffuseMaterial );
+	assets.materialLib.Add( "diffuseMaterial", diffuseMaterial );
 
 	Material mirrorMaterial;
 	mirrorMaterial.Ka = Color( 1.0f ).AsRGBf();
@@ -213,16 +214,16 @@ void CreateMaterials( Scene& scene )
 	mirrorMaterial.Ks = Color( 1.0f ).AsRGBf();
 	mirrorMaterial.Ke = Color( 1.0f ).AsRGBf();
 	mirrorMaterial.Tr = 0.8f;
-	scene.materialLib.Add( "mirrorMaterial", mirrorMaterial );
+	assets.materialLib.Add( "mirrorMaterial", mirrorMaterial );
 }
 
 
-void BuildRtSceneView( Scene& scene, RtScene& rtScene )
+void BuildRtSceneView( AssetManager& assets, RtScene& rtScene )
 {
 	hdl_t modelHdl;
 	Model model;
-	if( LoadRawModel( scene, "pawn.obj", "models\\", "textures\\", model ) ) {
-		modelHdl = scene.modelLib.Add( "sphere", model );
+	if( LoadRawModel( assets, "pawn.obj", "models\\", "textures\\", model ) ) {
+		modelHdl = assets.modelLib.Add( "sphere", model );
 	}
 	if( modelHdl != INVALID_HDL )
 	{
@@ -234,7 +235,7 @@ void BuildRtSceneView( Scene& scene, RtScene& rtScene )
 			ent.SetOrigin( vec3f( 0.0f, -70.0f, 0.0f ) );		
 			
 			RtModel sphere;
-			CreateRayTraceModel( scene, &ent, &sphere );
+			CreateRayTraceModel( assets, &ent, &sphere );
 			rtScene.models.push_back( sphere );
 		}
 		/*
@@ -357,10 +358,10 @@ int raytracemain(void)
 
 	rtScene.scene = &scene;
 
-	CreateMaterials( scene );
+	CreateMaterials( *rtScene.assets );
 
 	loadTimer.Start();
-	BuildRtSceneView( scene, rtScene );
+	BuildRtSceneView( *rtScene.assets, rtScene );
 	loadTimer.Stop();
 
 	std::cout << "Load Time: " << loadTimer.GetElapsed() << "ms" << std::endl;

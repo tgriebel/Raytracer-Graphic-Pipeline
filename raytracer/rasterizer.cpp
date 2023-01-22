@@ -319,11 +319,11 @@ void RasterScene( Image<Color>& image, const RtView& view, const RtScene& rtScen
 
 						Color surfaceColor = Color::Black;
 
-						const Material& material = rtScene.scene->materialLib.Find( triCache[ i ].materialId )->Get();
+						const Material& material = rtScene.assets->materialLib.Find( triCache[ i ].materialId )->Get();
 
 						if( material.IsTextured() )
 						{
-							const Texture& texture = rtScene.scene->textureLib.Find( material.GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
+							const Texture& texture = rtScene.assets->textureLib.Find( material.GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
 						//	surfaceColor = texture.cpuImage.GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] ); // FIXME
 						}
 						else
