@@ -195,6 +195,9 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 	}
 	else
 	{
+#if USE_RAYCAST
+		return surfaceSample;
+#endif
 		Color finalColor = Color::Black;
 		const Asset<Material>* material = rtScene.assets->materialLib.Find( surfaceSample.materialId );
 		Color surfaceColor = ( material != nullptr && material->Get().IsTextured() ) ? surfaceSample.albedo : surfaceSample.color;
@@ -334,10 +337,14 @@ void TracePixel( const RtView& view, const RtScene& rtScene, Image<Color>& image
 		dbg.diffuse.SetPixel( imageX, imageY, Color( (float)-diffuse ).AsR8G8B8A8() );
 		dbg.normal.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
 
+#if USE_RAYCAST
+		image.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
+#else
 		Color dest = Color( image.GetPixel( imageX, imageY ) );
 
 		Color pixel = BlendColor( src, dest, blendMode_t::SRCALPHA );
 		image.SetPixel( imageX, imageY, pixel );
+#endif
 	}
 }
 

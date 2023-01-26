@@ -64,8 +64,8 @@ RtView SetupFrontView()
 						CameraNearPlane,
 						CameraFarPlane );
 
-	view.viewTransform = view.camera.GetViewMatrix().Transpose();
-	view.projTransform = view.camera.GetPerspectiveMatrix().Transpose();
+	view.viewTransform = view.camera.GetViewMatrix();
+	view.projTransform = view.camera.GetPerspectiveMatrix();
 	view.projView = view.projTransform * view.viewTransform;
 
 	return view;
@@ -87,8 +87,8 @@ RtView SetupTopView()
 						CameraNearPlane,
 						CameraFarPlane );
 
-	view.viewTransform = view.camera.GetViewMatrix().Transpose();
-	view.projTransform = view.camera.GetPerspectiveMatrix().Transpose();
+	view.viewTransform = view.camera.GetViewMatrix();
+	view.projTransform = view.camera.GetPerspectiveMatrix();
 	view.projView = view.projTransform * view.viewTransform;
 
 	return view;
@@ -110,8 +110,8 @@ RtView SetupSideView()
 						CameraNearPlane,
 						CameraFarPlane );
 
-	view.viewTransform = view.camera.GetViewMatrix().Transpose();
-	view.projTransform = view.camera.GetPerspectiveMatrix().Transpose();
+	view.viewTransform = view.camera.GetViewMatrix();
+	view.projTransform = view.camera.GetPerspectiveMatrix();
 	view.projView = view.projTransform * view.viewTransform;
 
 	return view;
