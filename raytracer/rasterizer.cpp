@@ -354,12 +354,12 @@ void RasterScene( Image<Color>& image, const RtView& view, const RtScene& rtScen
 							surfaceColor += fragmentInput.color;
 						}
 
-						const vec4f D = ColorToVector( Color( material.Kd ) );
-						const vec4f S = ColorToVector( Color( material.Ks ) );
+						const vec4f D = ColorToVector( Color( material.Kd() ) );
+						const vec4f S = ColorToVector( Color( material.Ks() ) );
 
 						const vec4f diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0f, Dot( normal, lightDir ) );
-						const vec4f specularIntensity = S * pow( std::max( 0.0f, Dot( normal, halfVector ) ), material.Ns );
-						const Color ambient = AmbientLight * ( Color( material.Ka ) * surfaceColor );
+						const vec4f specularIntensity = S * pow( std::max( 0.0f, Dot( normal, halfVector ) ), material.Ns() );
+						const Color ambient = AmbientLight * ( Color( material.Ka() ) * surfaceColor );
 
 						Color shadingColor;
 						shadingColor = Vec4ToColor( specularIntensity );

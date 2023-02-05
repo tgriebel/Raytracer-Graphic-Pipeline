@@ -273,12 +273,12 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 
 				const vec3f halfVector = ( viewVector + lightDir ).Normalize();
 
-				const vec4f D = ColorToVector( Color( material->Get().Kd ) );
-				const vec4f S = ColorToVector( Color( material->Get().Ks ) );
+				const vec4f D = ColorToVector( Color( material->Get().Kd() ) );
+				const vec4f S = ColorToVector( Color( material->Get().Ks() ) );
 
 				const vec4f diffuseIntensity = Multiply( D, intensity ) * std::max( 0.0f, Dot( lightDir, surfaceSample.normal ) );
 
-				const vec4f specularIntensity = Multiply( S, intensity ) * pow( std::max( 0.0f, Dot( surfaceSample.normal, halfVector ) ), material->Get().Ns );
+				const vec4f specularIntensity = Multiply( S, intensity ) * pow( std::max( 0.0f, Dot( surfaceSample.normal, halfVector ) ), material->Get().Ns() );
 
 				shadingColor += Vec4ToColor( specularIntensity );
 				shadingColor += Vec4ToColor( Multiply( diffuseIntensity, ColorToVector( surfaceColor ) ) );
@@ -287,7 +287,7 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 			finalColor += shadingColor + relfectionColor;
 		}
 
-		const Color ambient = AmbientLight * ( Color( material->Get().Ka ) * surfaceColor );
+		const Color ambient = AmbientLight * ( Color( material->Get().Ka() ) * surfaceColor );
 
 		sample = surfaceSample;
 		sample.color = finalColor + ambient;

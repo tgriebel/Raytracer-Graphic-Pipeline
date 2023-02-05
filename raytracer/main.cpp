@@ -203,11 +203,11 @@ void CreateMaterials( AssetManager& assets )
 	for( uint32_t i = 0; i < 16; ++i )
 	{
 		Material dbgMaterial;
-		dbgMaterial.Ka = Color( 1.0f ).AsRGBf();
-		dbgMaterial.Kd = Color( DbgColors[ i ] ).AsRGBf();
-		dbgMaterial.Ks = Color( 0.0f ).AsRGBf();
-		dbgMaterial.Ke = Color( 0.0f ).AsRGBf();
-		dbgMaterial.Tr = 0.0f;
+		dbgMaterial.Ka( Color( 1.0f ).AsRGBf() );
+		dbgMaterial.Kd( Color( DbgColors[ i ] ).AsRGBf() );
+		dbgMaterial.Ks( Color( 0.0f ).AsRGBf() );
+		dbgMaterial.Ke( Color( 0.0f ).AsRGBf() );
+		dbgMaterial.Tr( 0.0f );
 
 		std::stringstream ss;
 		ss << "default_" << i;
@@ -215,27 +215,27 @@ void CreateMaterials( AssetManager& assets )
 	}
 
 	Material colorMaterial;
-	colorMaterial.Ka = Color( 1.0f ).AsRGBf();
-	colorMaterial.Kd = Color( 1.0f ).AsRGBf();
-	colorMaterial.Ks = Color( 0.0f ).AsRGBf();
-	colorMaterial.Ke = Color( 0.0f ).AsRGBf();
-	colorMaterial.Tr = 0.0f;
+	colorMaterial.Ka( Color( 1.0f ).AsRGBf() );
+	colorMaterial.Kd( Color( 1.0f ).AsRGBf() );
+	colorMaterial.Ks( Color( 0.0f ).AsRGBf() );
+	colorMaterial.Ke( Color( 0.0f ).AsRGBf() );
+	colorMaterial.Tr( 0.0f );
 	assets.materialLib.Add( "colorMaterial", colorMaterial );
 
 	Material diffuseMaterial;
-	diffuseMaterial.Ka = Color( 1.0f ).AsRGBf();
-	diffuseMaterial.Kd = Color( 1.0f ).AsRGBf();
-	diffuseMaterial.Ks = Color( 1.0f ).AsRGBf();
-	diffuseMaterial.Ke = Color( 1.0f ).AsRGBf();
-	diffuseMaterial.Tr = 0.0f;
+	diffuseMaterial.Ka( Color( 1.0f ).AsRGBf() );
+	diffuseMaterial.Kd( Color( 1.0f ).AsRGBf() );
+	diffuseMaterial.Ks( Color( 1.0f ).AsRGBf() );
+	diffuseMaterial.Ke( Color( 1.0f ).AsRGBf() );
+	diffuseMaterial.Tr( 0.0f );
 	assets.materialLib.Add( "diffuseMaterial", diffuseMaterial );
 
 	Material mirrorMaterial;
-	mirrorMaterial.Ka = Color( 1.0f ).AsRGBf();
-	mirrorMaterial.Kd = Color( 1.0f ).AsRGBf();
-	mirrorMaterial.Ks = Color( 1.0f ).AsRGBf();
-	mirrorMaterial.Ke = Color( 1.0f ).AsRGBf();
-	mirrorMaterial.Tr = 0.8f;
+	mirrorMaterial.Ka( Color( 1.0f ).AsRGBf() );
+	mirrorMaterial.Kd( Color( 1.0f ).AsRGBf() );
+	mirrorMaterial.Ks( Color( 1.0f ).AsRGBf() );
+	mirrorMaterial.Ke( Color( 1.0f ).AsRGBf() );
+	mirrorMaterial.Tr( 0.8f );
 	assets.materialLib.Add( "mirrorMaterial", mirrorMaterial );
 }
 
