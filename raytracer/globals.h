@@ -34,7 +34,7 @@
 #define USE_RELFECTION	0
 #define USE_SHADOWS		0
 #define USE_RAYTRACE	1
-#define USE_RAYCAST		1
+#define USE_RAYCAST		0
 #define USE_SSRAND		0 // TODO: Halton sequence
 #define USE_SS4X		0
 #define USE_RASTERIZE	1

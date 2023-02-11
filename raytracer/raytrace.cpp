@@ -118,7 +118,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene,
 	{
 		const Texture& texture = rtScene.assets->textureLib.Find( material->Get().GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
 		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
-	//	sample.albedo = texture.cpuImage.GetPixelUV( uv[ 0 ], uv[ 1 ] ); // FIXME
+		sample.albedo = texture.cpuImage.GetPixelUV( uv[ 0 ], uv[ 1 ] );
 	}
 
 	sample.surfaceDot = Dot( r.GetVector(), sample.normal );
@@ -361,7 +361,7 @@ void TracePixel( const RtView& view, const RtScene& rtScene, Image<Color>& image
 		dbg.normal.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
 
 #if USE_RAYCAST
-		image.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
+		image.SetPixel( imageX, imageY, src.AsR8G8B8A8() );
 #else
 		Color dest = Color( image.GetPixel( imageX, imageY ) );
 
