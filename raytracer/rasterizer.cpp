@@ -33,15 +33,15 @@
 #include "debug.h"
 #include "globals.h"
 
-Image<float> zBuffer( RenderWidth, RenderHeight, 0.0f, "_zbuffer" );
+CpuImage<float> zBuffer( RenderWidth, RenderHeight, 0.0f, "_zbuffer" );
 
-extern Image<float> depthBuffer;
+extern CpuImage<float> depthBuffer;
 extern ResourceManager rm;
 
 static Material DefaultMaterial;
 
 void OrthoMatrixToAxis( const mat4x4f& m, vec3f& origin, vec3f& xAxis, vec3f& yAxis, vec3f& zAxis );
-void DrawWorldAxis( Image<Color>& image, const RtView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z );
+void DrawWorldAxis( CpuImage<Color>& image, const RtView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z );
 
 struct vertexOut_t
 {
@@ -65,7 +65,7 @@ struct fragmentInput_t
 };
 
 
-void DrawCube( Image<Color>& image, const RtView& view, const vec4f& minCorner, const vec4f& maxCorner, Color color = Color::Green )
+void DrawCube( CpuImage<Color>& image, const RtView& view, const vec4f& minCorner, const vec4f& maxCorner, Color color = Color::Green )
 {
 	vec4f corners[ 8 ] = {
 		// Bottom
@@ -123,7 +123,7 @@ void DrawCube( Image<Color>& image, const RtView& view, const vec4f& minCorner, 
 }
 
 
-void DrawWorldAxis( Image<Color>& image, const RtView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z )
+void DrawWorldAxis( CpuImage<Color>& image, const RtView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z )
 {
 	vec4f points[ 4 ] = {
 		{ vec4f( origin, 1.0 ) },
@@ -147,7 +147,7 @@ void DrawWorldAxis( Image<Color>& image, const RtView& view, float size, const v
 }
 
 
-void DrawWorldPoint( Image<Color>& image, const RtView& view, const vec4f& point, const int32_t size, const Color& color )
+void DrawWorldPoint( CpuImage<Color>& image, const RtView& view, const vec4f& point, const int32_t size, const Color& color )
 {
 	vec4f projPt;
 	ProjectPoint( view.projView, view.targetSize, point, projPt );
@@ -172,7 +172,7 @@ void DrawWorldPoint( Image<Color>& image, const RtView& view, const vec4f& point
 }
 
 
-void DrawRay( Image<Color>& image, const RtView& view, const Ray& ray, const Color& color )
+void DrawRay( CpuImage<Color>& image, const RtView& view, const Ray& ray, const Color& color )
 {
 	vec4f ssPt[ 2 ];
 	vec4f wsPt[ 2 ];
@@ -185,7 +185,7 @@ void DrawRay( Image<Color>& image, const RtView& view, const Ray& ray, const Col
 
 
 template<typename T>
-void DrawOctree( Image<Color>& image, const RtView& view, const Octree<T>& octree, const Color& color )
+void DrawOctree( CpuImage<Color>& image, const RtView& view, const Octree<T>& octree, const Color& color )
 {
 	AABB bounds = octree.GetAABB();
 	DrawCube( image, view, vec4f( bounds.min, 1.0 ), vec4f( bounds.max, 1.0 ), color );
@@ -273,7 +273,7 @@ bool PixelShader( const fragmentInput_t & frag )
 }
 
 
-void RasterScene( Image<Color>& image, const RtView& view, const RtScene& rtScene, bool wireFrame = true )
+void RasterScene( CpuImage<Color>& image, const RtView& view, const RtScene& rtScene, bool wireFrame = true )
 {
 	mat4x4f mvp = view.projTransform * view.viewTransform;
 	const uint32_t modelCnt = static_cast<uint32_t>( rtScene.models.size() );

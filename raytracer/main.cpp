@@ -60,16 +60,16 @@ matHdl_t		mirrorMaterialId = 18;
 
 RtView			rtViews[4];
 debug_t			dbg;
-Image<Color>	colorBuffer;
-Image<float>	depthBuffer;
+CpuImage<Color>	colorBuffer;
+CpuImage<float>	depthBuffer;
 
-extern Image<float> zBuffer;
+extern CpuImage<float> zBuffer;
 
-void RasterScene( Image<Color>& image, const RtView& view, bool wireFrame = true );
+void RasterScene( CpuImage<Color>& image, const RtView& view, bool wireFrame = true );
 
-void ImageToBitmap( const Image<Color>& image, Bitmap& bitmap );
-void ImageToBitmap( const Image<float>& image, Bitmap& bitmap );
-void BitmapToImage( const Bitmap& bitmap, Image<Color>& image );
+void ImageToBitmap( const CpuImage<Color>& image, Bitmap& bitmap );
+void ImageToBitmap( const CpuImage<float>& image, Bitmap& bitmap );
+void BitmapToImage( const Bitmap& bitmap, CpuImage<Color>& image );
 
 RtView SetupFrontView()
 {
@@ -326,7 +326,7 @@ void BuildRtSceneView( AssetManager& assets, RtScene& rtScene )
 }
 
 
-void DrawGradientImage( Image<Color>& image, const Color& color0, const Color& color1, const float power = 1.0f )
+void DrawGradientImage( CpuImage<Color>& image, const Color& color0, const Color& color1, const float power = 1.0f )
 {
 	for ( uint32_t j = 0; j < image.GetHeight(); ++j )
 	{
@@ -341,7 +341,7 @@ void DrawGradientImage( Image<Color>& image, const Color& color0, const Color& c
 }
 
 template<typename T>
-void WriteImage( const Image<T>& image, const std::string& path, const int32_t number = -1 )
+void WriteImage( const CpuImage<T>& image, const std::string& path, const int32_t number = -1 )
 {
 	std::stringstream ss;
 
@@ -388,16 +388,16 @@ int raytracemain(void)
 
 	std::cout << "Load Time: " << loadTimer.GetElapsed() << "ms" << std::endl;
 
-	dbg.diffuse = Image<Color>( RenderWidth, RenderHeight, Color::Red, "dbgDiffuse" );
-	dbg.normal = Image<Color>( RenderWidth, RenderHeight, Color::White, "dbgNormal" );
-	dbg.wireframe = Image<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgWireframe" );
-	dbg.topWire = Image<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgTopWire" );
-	dbg.sideWire = Image<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgSideWire" );
+	dbg.diffuse = CpuImage<Color>( RenderWidth, RenderHeight, Color::Red, "dbgDiffuse" );
+	dbg.normal = CpuImage<Color>( RenderWidth, RenderHeight, Color::White, "dbgNormal" );
+	dbg.wireframe = CpuImage<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgWireframe" );
+	dbg.topWire = CpuImage<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgTopWire" );
+	dbg.sideWire = CpuImage<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgSideWire" );
 
-	colorBuffer = Image<Color>( RenderWidth, RenderHeight, Color::Black, "colorBuffer" );
-	depthBuffer = Image<float>( RenderWidth, RenderHeight, 0.0f, "depthBuffer" );
+	colorBuffer = CpuImage<Color>( RenderWidth, RenderHeight, Color::Black, "colorBuffer" );
+	depthBuffer = CpuImage<float>( RenderWidth, RenderHeight, 0.0f, "depthBuffer" );
 
-	Image<Color> frameBuffer = Image<Color>( RenderWidth, RenderHeight, Color::DGrey, "_frameBuffer" );
+	CpuImage<Color> frameBuffer = CpuImage<Color>( RenderWidth, RenderHeight, Color::DGrey, "_frameBuffer" );
 	DrawGradientImage( frameBuffer, Color::Blue, Color::Red, 0.8f );
 
 	SetupViews();

@@ -62,7 +62,7 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 sample_t RecordSkyInfo( const Ray& r, const float t );
 sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene, const uint32_t triIndex, const uint32_t modelIx );
 bool IntersectScene( const Ray& ray, const RtScene& rtScene, const bool cullBackfaces, const bool stopAtFirstIntersection, sample_t& outSample );
-void TracePixel( const RtView& view, const RtScene& rtScene, Image<Color>& image, const uint32_t px, const uint32_t py );
-void TracePatch( const RtView& view, const RtScene& rtScene, Image<Color>* image, const vec2i& p0, const vec2i& p1 );
-void TraceScene( const RtView& view, const RtScene& rtScene, Image<Color>& image );
-void RasterScene( Image<Color>& image, const RtView& view, const RtScene& rtScene, bool wireFrame = true );
+void TracePixel( const RtView& view, const RtScene& rtScene, CpuImage<Color>& image, const uint32_t px, const uint32_t py );
+void TracePatch( const RtView& view, const RtScene& rtScene, CpuImage<Color>* image, const vec2i& p0, const vec2i& p1 );
+void TraceScene( const RtView& view, const RtScene& rtScene, CpuImage<Color>& image );
+void RasterScene( CpuImage<Color>& image, const RtView& view, const RtScene& rtScene, bool wireFrame = true );
