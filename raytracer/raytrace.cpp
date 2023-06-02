@@ -116,7 +116,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene,
 	const Asset<Material>* material = rtScene.assets->materialLib.Find( sample.materialId );
 	if ( ( material != nullptr ) && material->Get().IsTextured() )
 	{
-		const Texture& texture = rtScene.assets->textureLib.Find( material->Get().GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
+		const Image& texture = rtScene.assets->textureLib.Find( material->Get().GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
 		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
 		sample.albedo = texture.cpuImage.GetPixelUV( uv[ 0 ], uv[ 1 ] );
 	}

@@ -346,7 +346,7 @@ void RasterScene( CpuImage<Color>& image, const RtView& view, const RtScene& rtS
 
 						if( material.IsTextured() )
 						{
-							const Texture& texture = rtScene.assets->textureLib.Find( material.GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
+							const Image& texture = rtScene.assets->textureLib.Find( material.GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
 						//	surfaceColor = texture.cpuImage.GetPixelUV( fragmentInput.uv[ 0 ], fragmentInput.uv[ 1 ] ); // FIXME
 						}
 						else
