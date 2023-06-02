@@ -21,14 +21,14 @@
 * SOFTWARE.
 */
 
-#include <image/bitmap.h>
-#include <math/vector.h>
-#include <math/matrix.h>
-#include <image/image.h>
-#include <scene/resourceManager.h>
-#include <acceleration/octree.h>
-#include <core/util.h>
-#include <core/rasterLib.h>
+#include <gfxcore/image/bitmap.h>
+#include <gfxcore/math/vector.h>
+#include <gfxcore/math/matrix.h>
+#include <gfxcore/image/image.h>
+#include <gfxcore/scene/resourceManager.h>
+#include <gfxcore/acceleration/octree.h>
+#include <gfxcore/core/util.h>
+#include <gfxcore/core/rasterLib.h>
 #include "scene.h"
 #include "debug.h"
 #include "globals.h"

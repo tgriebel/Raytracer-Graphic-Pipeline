@@ -23,11 +23,11 @@
 
 #pragma once
 
-#include <image/bitmap.h>
-#include <image/image.h>
-#include <image/color.h>
-#include <math/vector.h>
-#include <math/matrix.h>
+#include <gfxcore/image/bitmap.h>
+#include <gfxcore/image/image.h>
+#include <gfxcore/image/color.h>
+#include <gfxcore/math/vector.h>
+#include <gfxcore/math/matrix.h>
 #include "debug.h"
 
 #define USE_AABB		1

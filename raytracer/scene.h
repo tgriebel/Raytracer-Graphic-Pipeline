@@ -24,12 +24,12 @@
 #pragma once
 
 #include <vector>
-#include <scene/camera.h>
-#include <image/color.h>
-#include <math/vector.h>
-#include <math/matrix.h>
-#include <primitives/geom.h>
-#include <scene/scene.h>
+#include <gfxcore/scene/camera.h>
+#include <gfxcore/image/color.h>
+#include <gfxcore/math/vector.h>
+#include <gfxcore/math/matrix.h>
+#include <gfxcore/primitives/geom.h>
+#include <gfxcore/scene/scene.h>
 
 
 class RtScene

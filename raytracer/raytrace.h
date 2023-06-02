@@ -26,12 +26,12 @@
 #include <assert.h> 
 #include <float.h>
 #include <cstdint>
-#include <image/bitmap.h>
-#include <image/image.h>
-#include <image/color.h>
-#include <math/vector.h>
-#include <primitives/ray.h>
-#include <core/common.h>
+#include <gfxcore/image/bitmap.h>
+#include <gfxcore/image/image.h>
+#include <gfxcore/image/color.h>
+#include <gfxcore/math/vector.h>
+#include <gfxcore/primitives/ray.h>
+#include <gfxcore/core/common.h>
 #include "scene.h"
 
 enum hitCode_t : uint32_t
