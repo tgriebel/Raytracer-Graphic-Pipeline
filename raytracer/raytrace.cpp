@@ -51,17 +51,17 @@
 #include "raytrace.h"
 #include "scene.h"
 
-extern debug_t			dbg;
-extern RtView			rtViews[ 4 ];
-extern debug_t			dbg;
-extern CpuImage<Color>	colorBuffer;
-extern CpuImage<float>	depthBuffer;
+extern debug_t				dbg;
+extern RtView				rtViews[ 4 ];
+extern debug_t				dbg;
+extern ImageBuffer<Color>	colorBuffer;
+extern ImageBuffer<float>	depthBuffer;
 
 static Color skyColor = Color::Blue;
 
 static Material DefaultMaterial;
 
-void DrawRay( CpuImage<Color>& image, const RtView& view, const Ray& ray, const Color& color );
+void DrawRay( ImageBuffer<Color>& image, const RtView& view, const Ray& ray, const Color& color );
 
 sample_t RecordSkyInfo( const Ray& r, const float t )
 {
@@ -298,7 +298,7 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 }
 
 
-void TracePixel( const RtView& view, const RtScene& rtScene, CpuImage<Color>& image, const uint32_t px, const uint32_t py )
+void TracePixel( const RtView& view, const RtScene& rtScene, ImageBuffer<Color>& image, const uint32_t px, const uint32_t py )
 {
 #if	USE_SSRAND
 	const uint32_t subSampleCnt = 100;
@@ -372,7 +372,7 @@ void TracePixel( const RtView& view, const RtScene& rtScene, CpuImage<Color>& im
 }
 
 
-void TracePatch( const RtView& view, const RtScene& rtScene, CpuImage<Color>* image, const vec2i& p0, const vec2i& p1 )
+void TracePatch( const RtView& view, const RtScene& rtScene, ImageBuffer<Color>* image, const vec2i& p0, const vec2i& p1 )
 {
 	const int32_t x0 = p0[ 0 ];
 	const int32_t y0 = p0[ 1 ];
@@ -399,7 +399,7 @@ void TracePatch( const RtView& view, const RtScene& rtScene, CpuImage<Color>* im
 }
 
 
-void TraceScene( const RtView& view, const RtScene& rtScene, CpuImage<Color>& image )
+void TraceScene( const RtView& view, const RtScene& rtScene, ImageBuffer<Color>& image )
 {
 #if USE_RAYTRACE
 	uint32_t threadsLaunched = 0;

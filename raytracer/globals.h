@@ -78,11 +78,11 @@ enum axisMode_t : uint32_t
 
 struct debug_t
 {
-	CpuImage<Color> diffuse;
-	CpuImage<Color> normal;
-	CpuImage<Color> wireframe;
-	CpuImage<Color> topWire;
-	CpuImage<Color> sideWire;
+	ImageBuffer<Color> diffuse;
+	ImageBuffer<Color> normal;
+	ImageBuffer<Color> wireframe;
+	ImageBuffer<Color> topWire;
+	ImageBuffer<Color> sideWire;
 };
 
 
