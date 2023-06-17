@@ -252,7 +252,7 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 		for ( size_t li = 0; li < lightCnt; ++li )
 		{
 			const light_t& L = rtScene.lights[ li ];
-			vec3f lightPos = Trunc<4,1>( L.lightPos );
+			vec3f lightPos = Trunc<4,1>( L.pos );
 
 			Ray shadowRay = Ray( surfaceSample.pt, lightPos );
 
@@ -266,7 +266,7 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 			Color shadingColor = Color::Black;
 			if ( !lightOccluded )
 			{
-				const vec4f intensity = L.intensity;
+				const vec4f intensity = L.intensity * ColorToVector( L.color );
 
 				vec3f lightDir = shadowRay.GetVector();
 				lightDir = lightDir.Normalize();

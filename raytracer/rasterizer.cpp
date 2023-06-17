@@ -330,9 +330,9 @@ void RasterScene( ImageBuffer<Color>& image, const RtView& view, const RtScene& 
 						const vec3f normal = fragmentInput.normal.Normalize();
 
 						const light_t& L = rtScene.lights[ 0 ];
-						const vec4f intensity = L.intensity;
+						const vec4f intensity = L.intensity * ColorToVector( L.color );
 
-						vec3f lightDir = Trunc<4, 1>( L.lightPos - fragmentInput.wsPosition );
+						vec3f lightDir = Trunc<4, 1>( L.pos - fragmentInput.wsPosition );
 						lightDir = lightDir.Normalize();
 
 						const vec3f viewVector = Trunc<4, 1>( view.camera.GetOrigin() - fragmentInput.wsPosition ).Normalize();

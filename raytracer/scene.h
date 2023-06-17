@@ -38,7 +38,7 @@ public:
 	std::vector<RtModel>	models;
 	std::vector<light_t>	lights;
 	AABB					aabb;	// TODO: Replace with bvh tree
-	Scene*					scene;
+	const Scene*			scene;
 	AssetManager*			assets;
 };
 

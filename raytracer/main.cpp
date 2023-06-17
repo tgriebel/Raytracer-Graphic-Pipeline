@@ -302,8 +302,9 @@ void BuildRtSceneView( AssetManager& assets, RtScene& rtScene )
 	rtScene.lights.reserve( 3 );
 	{
 		light_t l;
-		l.lightPos = vec4f( -200.0f, -100.0f, 50.0f, 1.0f );
-		l.intensity = vec4f( 1.0f, 1.0f, 1.0f, 1.0f );
+		l.pos = vec4f( -200.0f, -100.0f, 50.0f, 1.0f );
+		l.intensity = 1.0f;
+		l.color = Color::White;
 		rtScene.lights.push_back( l );
 		/*
 		l.pos = vec3f( 150, 20.0, 0.0 );
