@@ -389,16 +389,16 @@ int raytracemain(void)
 
 	std::cout << "Load Time: " << loadTimer.GetElapsed() << "ms" << std::endl;
 
-	dbg.diffuse = ImageBuffer<Color>( RenderWidth, RenderHeight, Color::Red, "dbgDiffuse" );
-	dbg.normal = ImageBuffer<Color>( RenderWidth, RenderHeight, Color::White, "dbgNormal" );
-	dbg.wireframe = ImageBuffer<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgWireframe" );
-	dbg.topWire = ImageBuffer<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgTopWire" );
-	dbg.sideWire = ImageBuffer<Color>( RenderWidth, RenderHeight, Color::LGrey, "dbgSideWire" );
+	dbg.diffuse = ImageBuffer<Color>( RenderWidth, RenderHeight, 1, Color::Red, "dbgDiffuse" );
+	dbg.normal = ImageBuffer<Color>( RenderWidth, RenderHeight, 1, Color::White, "dbgNormal" );
+	dbg.wireframe = ImageBuffer<Color>( RenderWidth, RenderHeight, 1, Color::LGrey, "dbgWireframe" );
+	dbg.topWire = ImageBuffer<Color>( RenderWidth, RenderHeight, 1, Color::LGrey, "dbgTopWire" );
+	dbg.sideWire = ImageBuffer<Color>( RenderWidth, RenderHeight, 1, Color::LGrey, "dbgSideWire" );
 
-	colorBuffer = ImageBuffer<Color>( RenderWidth, RenderHeight, Color::Black, "colorBuffer" );
-	depthBuffer = ImageBuffer<float>( RenderWidth, RenderHeight, 0.0f, "depthBuffer" );
+	colorBuffer = ImageBuffer<Color>( RenderWidth, RenderHeight, 1, Color::Black, "colorBuffer" );
+	depthBuffer = ImageBuffer<float>( RenderWidth, RenderHeight, 1, 0.0f, "depthBuffer" );
 
-	ImageBuffer<Color> frameBuffer = ImageBuffer<Color>( RenderWidth, RenderHeight, Color::DGrey, "_frameBuffer" );
+	ImageBuffer<Color> frameBuffer = ImageBuffer<Color>( RenderWidth, RenderHeight, 1, Color::DGrey, "_frameBuffer" );
 	DrawGradientImage( frameBuffer, Color::Blue, Color::Red, 0.8f );
 
 	SetupViews();

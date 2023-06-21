@@ -33,7 +33,7 @@
 #include "debug.h"
 #include "globals.h"
 
-ImageBuffer<float> zBuffer( RenderWidth, RenderHeight, 0.0f, "_zbuffer" );
+ImageBuffer<float> zBuffer( RenderWidth, RenderHeight, 1, 0.0f, "_zbuffer" );
 
 extern ImageBuffer<float> depthBuffer;
 extern ResourceManager rm;
