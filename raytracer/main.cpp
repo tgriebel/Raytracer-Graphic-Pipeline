@@ -47,7 +47,7 @@
 #include <gfxcore/core/util.h>
 #include <gfxcore/io/io.h>
 #include "scene.h"
-#include <timer.h>
+#include <syscore/timer.h>
 #include "debug.h"
 #include "globals.h"
 #include "raytrace.h"

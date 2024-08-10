@@ -118,7 +118,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene,
 	{
 		const Image& texture = rtScene.assets->textureLib.Find( material->Get().GetTexture( GGX_COLOR_MAP_SLOT ) )->Get();
 		vec2f uv = b[ 0 ] * tri.v0.uv + b[ 1 ] * tri.v1.uv + b[ 2 ] * tri.v2.uv;
-		sample.albedo = texture.cpuImage.GetPixelUV( uv[ 0 ], uv[ 1 ] );
+		sample.albedo = reinterpret_cast<ImageBuffer<RGBA>*>(texture.cpuImage)->GetPixelUV( uv[ 0 ], uv[ 1 ] );
 	}
 
 	sample.surfaceDot = Dot( r.GetVector(), sample.normal );
