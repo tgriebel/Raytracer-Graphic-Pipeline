@@ -353,15 +353,15 @@ void TracePixel( const RtView& view, const RtScene& rtScene, ImageBuffer<Color>&
 		t /= subSampleCnt;
 
 		Color src = Color( LinearToSrgb( ( 1.0f / subSampleCnt ) * pixelColor ) );
-		src.rgba().a = (float)coverage;
+		src.a() = (float)coverage;
 
 		// normal = normal.Reverse();
 		Color normColor = Vec4ToColor( vec4f( 0.5f * normal + vec3f( 0.5f ), 1.0f ) );
-		dbg.diffuse.SetPixel( imageX, imageY, Color( (float)-diffuse ).AsR8G8B8A8() );
-		dbg.normal.SetPixel( imageX, imageY, normColor.AsR8G8B8A8() );
+		dbg.diffuse.SetPixel( imageX, imageY, Color( (float)-diffuse ).AsHex() );
+		dbg.normal.SetPixel( imageX, imageY, normColor.AsHex() );
 
 #if USE_RAYCAST
-		image.SetPixel( imageX, imageY, src.AsR8G8B8A8() );
+		image.SetPixel( imageX, imageY, src.AsHex() );
 #else
 		Color dest = Color( image.GetPixel( imageX, imageY ) );
 

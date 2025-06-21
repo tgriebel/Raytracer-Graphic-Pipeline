@@ -180,7 +180,7 @@ void DrawRay( ImageBuffer<Color>& image, const RtView& view, const Ray& ray, con
 	wsPt[ 1 ] = vec4f( ray.GetEndPoint(), 1.0 );
 	ProjectPoint( view.projView, view.targetSize, wsPt[ 0 ], ssPt[ 0 ] );
 	ProjectPoint( view.projView, view.targetSize, wsPt[ 1 ], ssPt[ 1 ] );
-	DrawLine( image, (int)ssPt[ 0 ][ 0 ], (int)ssPt[ 0 ][ 1 ], (int)ssPt[ 1 ][ 0 ], (int)ssPt[ 1 ][ 1 ], color.AsR8G8B8A8() );
+	DrawLine( image, (int)ssPt[ 0 ][ 0 ], (int)ssPt[ 0 ][ 1 ], (int)ssPt[ 1 ][ 0 ], (int)ssPt[ 1 ][ 1 ], color.AsHex() );
 }
 
 
@@ -370,7 +370,7 @@ void RasterScene( ImageBuffer<Color>& image, const RtView& view, const RtScene& 
 
 						const Color normalColor = Vec3ToColor( 0.5f * normal + vec3f( 0.5f ) );
 						
-						image.SetPixel( x, y, LinearToSrgb( shadingColor ).AsR8G8B8A8() );
+						image.SetPixel( x, y, LinearToSrgb( shadingColor ).AsHex() );
 						zBuffer.SetPixel( x, y, depth );
 					}
 				}
@@ -379,7 +379,7 @@ void RasterScene( ImageBuffer<Color>& image, const RtView& view, const RtScene& 
 #endif
 			{
 				Color color = vo.color[ 0 ];
-				color.rgba().a = 0.1f;
+				color.a() = 0.1f;
 
 				vec2i pxPts[ 3 ];
 				pxPts[ 0 ] = vec2i( static_cast<int32_t>( vo.clipPosition[ 0 ][ 0 ] ), static_cast<int32_t>( vo.clipPosition[ 0 ][ 1 ] ) );

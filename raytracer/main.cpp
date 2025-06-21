@@ -203,10 +203,10 @@ void CreateMaterials( AssetManager& assets )
 	for( uint32_t i = 0; i < 16; ++i )
 	{
 		Material dbgMaterial;
-		dbgMaterial.Ka( Color( 1.0f ).AsRGBf() );
-		dbgMaterial.Kd( Color( DbgColors[ i ] ).AsRGBf() );
-		dbgMaterial.Ks( Color( 0.0f ).AsRGBf() );
-		dbgMaterial.Ke( Color( 0.0f ).AsRGBf() );
+		dbgMaterial.Ka( Color( 1.0f ).AsRgb32() );
+		dbgMaterial.Kd( Color( DbgColors[ i ] ).AsRgb32() );
+		dbgMaterial.Ks( Color( 0.0f ).AsRgb32() );
+		dbgMaterial.Ke( Color( 0.0f ).AsRgb32() );
 		dbgMaterial.Tr( 0.0f );
 
 		std::stringstream ss;
@@ -215,26 +215,26 @@ void CreateMaterials( AssetManager& assets )
 	}
 
 	Material colorMaterial;
-	colorMaterial.Ka( Color( 1.0f ).AsRGBf() );
-	colorMaterial.Kd( Color( 1.0f ).AsRGBf() );
-	colorMaterial.Ks( Color( 0.0f ).AsRGBf() );
-	colorMaterial.Ke( Color( 0.0f ).AsRGBf() );
+	colorMaterial.Ka( Color( 1.0f ).AsRgb32() );
+	colorMaterial.Kd( Color( 1.0f ).AsRgb32() );
+	colorMaterial.Ks( Color( 0.0f ).AsRgb32() );
+	colorMaterial.Ke( Color( 0.0f ).AsRgb32() );
 	colorMaterial.Tr( 0.0f );
 	assets.materialLib.Add( "colorMaterial", colorMaterial );
 
 	Material diffuseMaterial;
-	diffuseMaterial.Ka( Color( 1.0f ).AsRGBf() );
-	diffuseMaterial.Kd( Color( 1.0f ).AsRGBf() );
-	diffuseMaterial.Ks( Color( 1.0f ).AsRGBf() );
-	diffuseMaterial.Ke( Color( 1.0f ).AsRGBf() );
+	diffuseMaterial.Ka( Color( 1.0f ).AsRgb32() );
+	diffuseMaterial.Kd( Color( 1.0f ).AsRgb32() );
+	diffuseMaterial.Ks( Color( 1.0f ).AsRgb32() );
+	diffuseMaterial.Ke( Color( 1.0f ).AsRgb32() );
 	diffuseMaterial.Tr( 0.0f );
 	assets.materialLib.Add( "diffuseMaterial", diffuseMaterial );
 
 	Material mirrorMaterial;
-	mirrorMaterial.Ka( Color( 1.0f ).AsRGBf() );
-	mirrorMaterial.Kd( Color( 1.0f ).AsRGBf() );
-	mirrorMaterial.Ks( Color( 1.0f ).AsRGBf() );
-	mirrorMaterial.Ke( Color( 1.0f ).AsRGBf() );
+	mirrorMaterial.Ka( Color( 1.0f ).AsRgb32() );
+	mirrorMaterial.Kd( Color( 1.0f ).AsRgb32() );
+	mirrorMaterial.Ks( Color( 1.0f ).AsRgb32() );
+	mirrorMaterial.Ke( Color( 1.0f ).AsRgb32() );
 	mirrorMaterial.Tr( 0.8f );
 	assets.materialLib.Add( "mirrorMaterial", mirrorMaterial );
 }
@@ -333,7 +333,7 @@ void DrawGradientImage( ImageBuffer<Color>& image, const Color& color0, const Co
 	{
 		const float t = pow( j / static_cast<float>( image.GetHeight() ), power );
 
-		const uint32_t gradient = LinearToSrgb( Lerp( color0, color1, t ) ).AsR8G8B8A8();
+		const uint32_t gradient = LinearToSrgb( Lerp( color0, color1, t ) ).AsHex();
 		for ( uint32_t i = 0; i < image.GetWidth(); ++i )
 		{
 			image.SetPixel( i, j, gradient );
