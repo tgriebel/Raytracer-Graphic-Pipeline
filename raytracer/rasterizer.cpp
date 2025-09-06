@@ -127,9 +127,9 @@ void DrawWorldAxis( ImageBuffer<Color>& image, const RtView& view, float size, c
 {
 	vec4f points[ 4 ] = {
 		{ vec4f( origin, 1.0 ) },
-		{ vec4f( origin + size * X.Normalize(), 1.0 ) },
-		{ vec4f( origin + size * Y.Normalize(), 1.0 ) },
-		{ vec4f( origin + size * Z.Normalize(), 1.0 ) },
+		{ vec4f( origin + size * Normalize( X ), 1.0 ) },
+		{ vec4f( origin + size * Normalize( Y ), 1.0 ) },
+		{ vec4f( origin + size * Normalize( Z ), 1.0 ) },
 	};
 
 	vec2i ssPts[ 4 ];
@@ -327,18 +327,18 @@ void RasterScene( ImageBuffer<Color>& image, const RtView& view, const RtScene& 
 						if ( depth < zBuffer.GetPixel( x, y ) )
 							continue;
 
-						const vec3f normal = fragmentInput.normal.Normalize();
+						const vec3f normal = Normalize( fragmentInput.normal );
 
 						const light_t& L = rtScene.lights[ 0 ];
 						const vec4f intensity = L.intensity * ColorToVector( L.color );
 
 						vec3f lightDir = Trunc<4, 1>( L.pos - fragmentInput.wsPosition );
-						lightDir = lightDir.Normalize();
+						lightDir = Normalize( lightDir );
 
-						const vec3f viewVector = Trunc<4, 1>( view.camera.GetOrigin() - fragmentInput.wsPosition ).Normalize();
+						const vec3f viewVector = Normalize( Trunc<4, 1>( view.camera.GetOrigin() - fragmentInput.wsPosition ) );
 						const Color viewDiffuse = Color( (float)Dot( viewVector, normal ) );
 
-						const vec3f halfVector = ( viewVector + lightDir ).Normalize();
+						const vec3f halfVector = Normalize( viewVector + lightDir );
 
 						Color surfaceColor = Color::Black;
 

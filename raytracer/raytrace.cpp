@@ -98,7 +98,7 @@ sample_t RecordSurfaceInfo( const Ray& r, const float t, const RtScene& rtScene,
 	const vec3f b = PointToBarycentric( sample.pt, Trunc<4, 1>( tri.v0.pos ), Trunc<4, 1>( tri.v1.pos ), Trunc<4, 1>( tri.v2.pos ) );
 #if PHONG_NORMALS
 	sample.normal = ( b[ 0 ] * tri.v0.normal ) + ( b[ 1 ] * tri.v1.normal ) + ( b[ 2 ] * tri.v2.normal );
-	sample.normal = sample.normal.Normalize();
+	sample.normal = Normalize( sample.normal );
 #else
 	sample.normal = tri.n;
 #endif
@@ -226,7 +226,7 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 		Color surfaceColor = ( material != nullptr && material->Get().IsTextured() ) ? surfaceSample.albedo : surfaceSample.color;
 
 		vec3f viewVector = ray.GetVector().Reverse();
-		viewVector = viewVector.Normalize();
+		viewVector = Normalize( viewVector );
 
 		Color relfectionColor = Color::Black;
 #if USE_RELFECTION
@@ -269,9 +269,9 @@ sample_t RayTrace_r( const Ray& ray, const RtScene& rtScene, const uint32_t rayD
 				const vec4f intensity = L.intensity * ColorToVector( L.color );
 
 				vec3f lightDir = shadowRay.GetVector();
-				lightDir = lightDir.Normalize();
+				lightDir = Normalize( lightDir );
 
-				const vec3f halfVector = ( viewVector + lightDir ).Normalize();
+				const vec3f halfVector = Normalize( viewVector + lightDir );
 
 				const vec4f D = ColorToVector( Color( material->Get().Kd() ) );
 				const vec4f S = ColorToVector( Color( material->Get().Ks() ) );
@@ -349,7 +349,7 @@ void TracePixel( const RtView& view, const RtScene& rtScene, ImageBuffer<Color>&
 
 		coverage /= subSampleCnt;
 		diffuse /= subSampleCnt;
-		normal = normal.Normalize();
+		normal = Normalize( normal );
 		t /= subSampleCnt;
 
 		Color src = Color( LinearToSrgb( ( 1.0f / subSampleCnt ) * pixelColor ) );
