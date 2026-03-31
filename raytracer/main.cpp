@@ -211,7 +211,7 @@ void CreateMaterials( AssetManager& assets )
 
 		std::stringstream ss;
 		ss << "default_" << i;
-		assets.materialLib.Add( ss.str().c_str(), dbgMaterial );
+		assets.GetLib<Material>()->Add( ss.str().c_str(), dbgMaterial );
 	}
 
 	Material colorMaterial;
@@ -220,7 +220,7 @@ void CreateMaterials( AssetManager& assets )
 	colorMaterial.Ks( Color( 0.0f ).AsRgb32() );
 	colorMaterial.Ke( Color( 0.0f ).AsRgb32() );
 	colorMaterial.Tr( 0.0f );
-	assets.materialLib.Add( "colorMaterial", colorMaterial );
+	assets.GetLib<Material>()->Add( "colorMaterial", colorMaterial );
 
 	Material diffuseMaterial;
 	diffuseMaterial.Ka( Color( 1.0f ).AsRgb32() );
@@ -228,7 +228,7 @@ void CreateMaterials( AssetManager& assets )
 	diffuseMaterial.Ks( Color( 1.0f ).AsRgb32() );
 	diffuseMaterial.Ke( Color( 1.0f ).AsRgb32() );
 	diffuseMaterial.Tr( 0.0f );
-	assets.materialLib.Add( "diffuseMaterial", diffuseMaterial );
+	assets.GetLib<Material>()->Add( "diffuseMaterial", diffuseMaterial );
 
 	Material mirrorMaterial;
 	mirrorMaterial.Ka( Color( 1.0f ).AsRgb32() );
@@ -236,7 +236,7 @@ void CreateMaterials( AssetManager& assets )
 	mirrorMaterial.Ks( Color( 1.0f ).AsRgb32() );
 	mirrorMaterial.Ke( Color( 1.0f ).AsRgb32() );
 	mirrorMaterial.Tr( 0.8f );
-	assets.materialLib.Add( "mirrorMaterial", mirrorMaterial );
+	assets.GetLib<Material>()->Add( "mirrorMaterial", mirrorMaterial );
 }
 
 
@@ -245,7 +245,7 @@ void BuildRtSceneView( AssetManager& assets, RtScene& rtScene )
 	hdl_t modelHdl;
 	Model model;
 	if( LoadRawModel( assets, "pawn.obj", "models\\", "textures\\", model ) ) {
-		modelHdl = assets.modelLib.Add( "sphere", model );
+		modelHdl = assets.GetLib<Model>()->Add( "sphere", model );
 	}
 	if( modelHdl != INVALID_HDL )
 	{

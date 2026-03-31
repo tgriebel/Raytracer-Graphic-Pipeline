@@ -1,7 +1,7 @@
 /*
 * MIT License
 *
-* Copyright( c ) 2023 Thomas Griebel
+* Copyright( c ) 2023-2026 Thomas Griebel
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this softwareand associated documentation files( the "Software" ), to deal
 * in the Software without restriction, including without limitation the rights
@@ -21,27 +21,25 @@
 * SOFTWARE.
 */
 
-#include <gfxcore/image/bitmap.h>
-#include <gfxcore/math/vector.h>
-#include <gfxcore/math/matrix.h>
-#include <gfxcore/image/image.h>
-#include <gfxcore/scene/resourceManager.h>
-#include <gfxcore/acceleration/octree.h>
-#include <gfxcore/core/util.h>
-#include <gfxcore/core/rasterLib.h>
-#include "scene.h"
-#include "debug.h"
-#include "globals.h"
+#pragma once
 
-ImageBuffer<float> zBuffer( RenderWidth, RenderHeight, 1, 0.0f, "_zbuffer" );
+//
+// raster.h — Single-header software rasterization pipeline
+//
+// Requires: rt_common.h (shared types), GfxCore (submodule)
+//
+// Contains vertex/fragment types, debug drawing helpers (cubes,
+// axes, points, rays, octrees), a vertex shader, scanline
+// rasterizer with z-buffer and Blinn-Phong/GGX shading, and
+// wireframe rendering.
+//
 
-extern ImageBuffer<float> depthBuffer;
-extern ResourceManager rm;
+#include "rt_common.h"
 
-static Material DefaultMaterial;
 
-void OrthoMatrixToAxis( const mat4x4f& m, vec3f& origin, vec3f& xAxis, vec3f& yAxis, vec3f& zAxis );
-void DrawWorldAxis( ImageBuffer<Color>& image, const RtView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z );
+// ============================================================
+// Types
+// ============================================================
 
 struct vertexOut_t
 {
@@ -65,7 +63,32 @@ struct fragmentInput_t
 };
 
 
-void DrawCube( ImageBuffer<Color>& image, const RtView& view, const vec4f& minCorner, const vec4f& maxCorner, Color color = Color::Green )
+// ============================================================
+// Declarations
+// ============================================================
+
+void DrawCube( ImageBuffer<Color>& image, const RtView& view, const vec4f& minCorner, const vec4f& maxCorner, Color color = Color::Green );
+void DrawWorldAxis( ImageBuffer<Color>& image, const RtView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z );
+void DrawWorldPoint( ImageBuffer<Color>& image, const RtView& view, const vec4f& point, const int32_t size, const Color& color );
+void DrawRay( ImageBuffer<Color>& image, const RtView& view, const Ray& ray, const Color& color );
+
+template<typename T>
+void DrawOctree( ImageBuffer<Color>& image, const RtView& view, const Octree<T>& octree, const Color& color );
+
+bool VertexShader( const RtView& view, const Triangle& tri, vertexOut_t& outVertex );
+bool EmitFragment( const vec3f& baryPt, const vertexOut_t& vo, fragmentInput_t& outFragment );
+bool PixelShader( const fragmentInput_t& frag );
+void RasterScene( ImageBuffer<Color>& image, const RtView& view, const RtScene& rtScene, bool wireFrame = true );
+
+
+// ============================================================
+// Implementation
+// ============================================================
+
+static Material DefaultRasterMaterial;
+
+
+inline void DrawCube( ImageBuffer<Color>& image, const RtView& view, const vec4f& minCorner, const vec4f& maxCorner, Color color )
 {
 	vec4f corners[ 8 ] = {
 		// Bottom
@@ -123,7 +146,7 @@ void DrawCube( ImageBuffer<Color>& image, const RtView& view, const vec4f& minCo
 }
 
 
-void DrawWorldAxis( ImageBuffer<Color>& image, const RtView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z )
+inline void DrawWorldAxis( ImageBuffer<Color>& image, const RtView& view, float size, const vec3f& origin, const vec3f& X, const vec3f& Y, const vec3f& Z )
 {
 	vec4f points[ 4 ] = {
 		{ vec4f( origin, 1.0 ) },
@@ -147,7 +170,7 @@ void DrawWorldAxis( ImageBuffer<Color>& image, const RtView& view, float size, c
 }
 
 
-void DrawWorldPoint( ImageBuffer<Color>& image, const RtView& view, const vec4f& point, const int32_t size, const Color& color )
+inline void DrawWorldPoint( ImageBuffer<Color>& image, const RtView& view, const vec4f& point, const int32_t size, const Color& color )
 {
 	vec4f projPt;
 	ProjectPoint( view.projView, view.targetSize, point, projPt );
@@ -172,7 +195,7 @@ void DrawWorldPoint( ImageBuffer<Color>& image, const RtView& view, const vec4f&
 }
 
 
-void DrawRay( ImageBuffer<Color>& image, const RtView& view, const Ray& ray, const Color& color )
+inline void DrawRay( ImageBuffer<Color>& image, const RtView& view, const Ray& ray, const Color& color )
 {
 	vec4f ssPt[ 2 ];
 	vec4f wsPt[ 2 ];
@@ -185,7 +208,7 @@ void DrawRay( ImageBuffer<Color>& image, const RtView& view, const Ray& ray, con
 
 
 template<typename T>
-void DrawOctree( ImageBuffer<Color>& image, const RtView& view, const Octree<T>& octree, const Color& color )
+inline void DrawOctree( ImageBuffer<Color>& image, const RtView& view, const Octree<T>& octree, const Color& color )
 {
 	AABB bounds = octree.GetAABB();
 	DrawCube( image, view, vec4f( bounds.min, 1.0 ), vec4f( bounds.max, 1.0 ), color );
@@ -198,7 +221,7 @@ void DrawOctree( ImageBuffer<Color>& image, const RtView& view, const Octree<T>&
 }
 
 
-bool VertexShader( const RtView& view, const Triangle& tri, vertexOut_t& outVertex )
+inline bool VertexShader( const RtView& view, const Triangle& tri, vertexOut_t& outVertex )
 {
 	const mat4x4f& mvp = view.projView;
 
@@ -245,7 +268,7 @@ bool VertexShader( const RtView& view, const Triangle& tri, vertexOut_t& outVert
 }
 
 
-bool EmitFragment( const vec3f& baryPt, const vertexOut_t& vo, fragmentInput_t& outFragment )
+inline bool EmitFragment( const vec3f& baryPt, const vertexOut_t& vo, fragmentInput_t& outFragment )
 {
 	if( ( baryPt[ 0 ] < 0.0 ) || ( baryPt[ 1 ] < 0.0 ) || ( baryPt[ 2 ] < 0.0 ) )
 	{
@@ -267,13 +290,13 @@ bool EmitFragment( const vec3f& baryPt, const vertexOut_t& vo, fragmentInput_t& 
 }
 
 
-bool PixelShader( const fragmentInput_t & frag )
+inline bool PixelShader( const fragmentInput_t& frag )
 {
 	return false;
 }
 
 
-void RasterScene( ImageBuffer<Color>& image, const RtView& view, const RtScene& rtScene, bool wireFrame = true )
+inline void RasterScene( ImageBuffer<Color>& image, ImageBuffer<float>& zBuffer, const RtView& view, const RtScene& rtScene, bool wireFrame )
 {
 	mat4x4f mvp = view.projTransform * view.viewTransform;
 	const uint32_t modelCnt = static_cast<uint32_t>( rtScene.models.size() );
@@ -298,9 +321,9 @@ void RasterScene( ImageBuffer<Color>& image, const RtView& view, const RtScene& 
 			{
 				// Scanline Rasterizer
 				AABB ssBox;
-				for ( int i = 0; i < 3; ++i )
+				for ( int j = 0; j < 3; ++j )
 				{
-					ssBox.Expand( Trunc<4, 1>( vo.clipPosition[ i ] ) );
+					ssBox.Expand( Trunc<4, 1>( vo.clipPosition[ j ] ) );
 				}
 
 				const vec3f tPt0 = Trunc<4, 1>( vo.clipPosition[ 0 ] );
@@ -369,7 +392,7 @@ void RasterScene( ImageBuffer<Color>& image, const RtView& view, const RtScene& 
 						shadingColor = Vec3ToColor( BrdfGGX( normal, viewVector, lightDir, material ) );
 
 						const Color normalColor = Vec3ToColor( 0.5f * normal + vec3f( 0.5f ) );
-						
+
 						image.SetPixel( x, y, LinearToSrgb( shadingColor ).AsHex() );
 						zBuffer.SetPixel( x, y, depth );
 					}
@@ -419,6 +442,6 @@ void RasterScene( ImageBuffer<Color>& image, const RtView& view, const RtScene& 
 			DrawWorldAxis( image, view, 20.0f, origin, xAxis, yAxis, zAxis );
 		}
 	}
-	
+
 	// DrawOctree( image, view, rtScene.models[ 0 ].octree, Color::Red );
 }
