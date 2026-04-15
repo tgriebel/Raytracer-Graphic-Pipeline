@@ -3,3 +3,5 @@ This project has been abandoned and won't compiled as-is.
 I'll eventually merge this into the Vulkan renderer project at some point.
 
 I tried to share scene/asset work between the raytracer and renderer, but it got to be way too cumbersome and the effort wasn't really justified
+
+The most generic functionality will be hoisted into GfxCore
